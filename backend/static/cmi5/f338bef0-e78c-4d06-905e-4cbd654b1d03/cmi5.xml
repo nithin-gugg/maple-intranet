@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<courseStructure xmlns="https://w3id.org/xapi/profiles/cmi5/v1/CourseStructure.xsd">
+  <course id="http://7i7yWzOAgY_Wc7mSiizcxnb13IDocxfX_rise/course">
+    <title>
+      <langstring lang="en">Spotting a Phishing Email: Practical Skills for Everyone</langstring>
+    </title>
+    <description>
+      <langstring lang="en">Could you spot a phishing email before you click? Every day, seemingly ordinary emails can put your personal and company information at risk. This concise, interactive course will show you exactly what to look for, how to react if something seems suspicious, and what steps to take if you make a mistake. By the end, you’ll have the confidence and practical skills to identify and respond to phishing attempts—protecting yourself and your workplace from real threats.</langstring>
+    </description>
+  </course>
+  <objectives>
+    
+      <objective id="http://7i7yWzOAgY_Wc7mSiizcxnb13IDocxfX_rise/objective/cmsq25lzw002i357wdpajfd5d">
+        <title>
+          <langstring lang="en">Why Phishing Awareness Matters</langstring>
+        </title>
+        <description>
+          <langstring lang="en"></langstring>
+        </description>
+      </objective>
+    
+      <objective id="http://7i7yWzOAgY_Wc7mSiizcxnb13IDocxfX_rise/objective/cmsq25lzw002j357w6s2zj0ip">
+        <title>
+          <langstring lang="en">How to Spot and Respond to Phishing Emails</langstring>
+        </title>
+        <description>
+          <langstring lang="en"></langstring>
+        </description>
+      </objective>
+    
+      <objective id="http://7i7yWzOAgY_Wc7mSiizcxnb13IDocxfX_rise/objective/R97bIUKf6w2a1ZuGt-EumWRFEc4I7nod">
+        <title>
+          <langstring lang="en">What to do about it</langstring>
+        </title>
+        <description>
+          <langstring lang="en"></langstring>
+        </description>
+      </objective>
+    
+      <objective id="http://7i7yWzOAgY_Wc7mSiizcxnb13IDocxfX_rise/objective/cmsq25lzw002k357w9dvcpxtf">
+        <title>
+          <langstring lang="en">Check and Reinforce Your Knowledge</langstring>
+        </title>
+        <description>
+          <langstring lang="en"></langstring>
+        </description>
+      </objective>
+    
+      <objective id="http://7i7yWzOAgY_Wc7mSiizcxnb13IDocxfX_rise/objective/cmsq25lzw002l357w2qavlvxq">
+        <title>
+          <langstring lang="en">Quiz</langstring>
+        </title>
+        <description>
+          <langstring lang="en">Test your ability to spot phishing emails by looking for red flags like generic greetings such as “Dear User” and suspicious messages from IT asking you to confirm your password. Find out what to do if you click a bad link, including why disconnecting from the internet right away can help prevent bigger disruptions.</langstring>
+        </description>
+      </objective>
+    
+  </objectives>
+  <au id="http://7i7yWzOAgY_Wc7mSiizcxnb13IDocxfX_rise/activity" launchMethod="OwnWindow" moveOn="Passed" masteryScore="0.8" >
+    <title>
+      <langstring lang="en">
+        Spotting a Phishing Email: Practical Skills for Everyone
+      </langstring>
+    </title>
+    <description>
+      <langstring lang="en">
+        Could you spot a phishing email before you click? Every day, seemingly ordinary emails can put your personal and company information at risk. This concise, interactive course will show you exactly what to look for, how to react if something seems suspicious, and what steps to take if you make a mistake. By the end, you’ll have the confidence and practical skills to identify and respond to phishing attempts—protecting yourself and your workplace from real threats.
+      </langstring>
+    </description>
+    <objectives>
+      
+        <objective idref="http://7i7yWzOAgY_Wc7mSiizcxnb13IDocxfX_rise/objective/cmsq25lzw002i357wdpajfd5d" />
+      
+        <objective idref="http://7i7yWzOAgY_Wc7mSiizcxnb13IDocxfX_rise/objective/cmsq25lzw002j357w6s2zj0ip" />
+      
+        <objective idref="http://7i7yWzOAgY_Wc7mSiizcxnb13IDocxfX_rise/objective/R97bIUKf6w2a1ZuGt-EumWRFEc4I7nod" />
+      
+        <objective idref="http://7i7yWzOAgY_Wc7mSiizcxnb13IDocxfX_rise/objective/cmsq25lzw002k357w9dvcpxtf" />
+      
+        <objective idref="http://7i7yWzOAgY_Wc7mSiizcxnb13IDocxfX_rise/objective/cmsq25lzw002l357w2qavlvxq" />
+      
+    </objectives>
+    <url>scormdriver/indexAPI.html</url>
+  </au>
+</courseStructure>
