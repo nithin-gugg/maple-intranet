@@ -72,3 +72,6 @@ wcwidth==0.8.2
 websockets==15.0.1
 
 supabase==2.31.0
+
+eventregistry==9.1
+pytz==2026.3.post1
