@@ -10,7 +10,7 @@ export default function AdminDocumentsPage() {
 
   const fetchDocuments = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/documents`);
       const data = await res.json();
       setDocuments(data);
     } catch (err) {
@@ -27,7 +27,7 @@ export default function AdminDocumentsPage() {
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this document?")) return;
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/${id}`, { method: "DELETE" });
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/documents/${id}`, { method: "DELETE" });
       setDocuments(documents.filter(d => d.id !== id));
     } catch (err) {
       console.error(err);

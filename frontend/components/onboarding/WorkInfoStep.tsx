@@ -22,7 +22,7 @@ export default function WorkInfoStep({ data, onNext, onBack, isSaving, tokenGett
       try {
         const token = await tokenGetter();
         // Fallback to internal api if needed, assuming /api/v1/departments exists and is public/protected
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/departments/`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/departments/`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) {

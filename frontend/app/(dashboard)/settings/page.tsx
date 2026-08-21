@@ -31,13 +31,13 @@ export default function SettingsPage() {
         const token = await getToken();
         
         // Fetch departments
-        const deptRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/departments/`, {
+        const deptRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/departments/`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (deptRes.ok) setDepartments(await deptRes.json());
         
         // Fetch profile
-        const profRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/profile/sync`, {
+        const profRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/profile/sync`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (profRes.ok) {
@@ -88,7 +88,7 @@ export default function SettingsPage() {
       if (formData.date_of_birth) payload.date_of_birth = new Date(formData.date_of_birth).toISOString();
       if (formData.joining_date) payload.joining_date = new Date(formData.joining_date).toISOString();
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/profile/onboarding`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/profile/onboarding`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

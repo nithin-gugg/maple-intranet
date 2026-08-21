@@ -17,7 +17,7 @@ export default function EditDocumentPage({ params }: { params: Promise<{ id: str
   useEffect(() => {
     const fetchDoc = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/${id}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/documents/${id}`);
         const data = await res.json();
         if (data) {
           setFormData({ title: data.title, drive_url: data.drive_url || "" });
@@ -36,7 +36,7 @@ export default function EditDocumentPage({ params }: { params: Promise<{ id: str
     setIsSaving(true);
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/${id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/documents/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ drive_url: formData.drive_url }),

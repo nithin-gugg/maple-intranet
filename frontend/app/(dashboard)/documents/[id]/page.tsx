@@ -15,7 +15,7 @@ export default function DocumentViewerPage({ params }: { params: Promise<{ id: s
   useEffect(() => {
     const fetchDoc = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/${id}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/documents/${id}`);
         if (!res.ok) throw new Error("Document not found");
         const data = await res.json();
         setDoc(data);

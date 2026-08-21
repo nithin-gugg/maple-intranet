@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import * as React from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 interface ScormPlayerProps {
@@ -18,7 +19,7 @@ export default function Scorm12Player({ packageId, entryPointUrl, userId }: Scor
     // 1. Initialize session with backend
     const initSession = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/scorm/runtime/initialize`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/scorm/runtime/initialize`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ package_id: packageId, user_id: userId }),
@@ -34,7 +35,7 @@ export default function Scorm12Player({ packageId, entryPointUrl, userId }: Scor
     initSession();
   }, [packageId, userId]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!sessionId) return;
 
     // 2. Build the SCORM API adapter and attach it to the window object.
@@ -48,7 +49,7 @@ export default function Scorm12Player({ packageId, entryPointUrl, userId }: Scor
       },
       LMSFinish: function () {
         console.log("SCORM: LMSFinish called");
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/scorm/runtime/finish`, {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/scorm/runtime/finish`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ session_id: sessionId, cmi_key: "" }),
@@ -68,7 +69,7 @@ export default function Scorm12Player({ packageId, entryPointUrl, userId }: Scor
       LMSSetValue: function (cmi_key: string, cmi_value: string) {
         console.log("SCORM: LMSSetValue called for", cmi_key, "->", cmi_value);
         // Async save to backend
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/scorm/runtime/setvalue`, {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/scorm/runtime/setvalue`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ session_id: sessionId, cmi_key, cmi_value }),
@@ -97,24 +98,45 @@ export default function Scorm12Player({ packageId, entryPointUrl, userId }: Scor
     };
   }, [sessionId]);
 
-  if (isInitializing) {
+  const [iframeLoaded, setIframeLoaded] = useState(false);
+
+  if (!sessionId) {
     return (
       <div className="flex flex-col items-center justify-center h-[600px] bg-canvas rounded-xl border border-hairline">
         <Loader2 className="h-8 w-8 animate-spin text-brand-green" />
-        <p className="mt-4 text-sm text-slate-500 font-medium">Initializing Learning Environment...</p>
+        <p className="mt-4 text-sm text-slate-500 font-medium">Preparing your learning experience...</p>
       </div>
     );
   }
 
-  // Use the proxied URL directly so Next.js rewrites it
-  const srcUrl = entryPointUrl;
+  let srcUrl = entryPointUrl;
+  
+  // If it's a Supabase URL, proxy it to bypass the Supabase CDN text/plain restriction for HTML files
+  if (srcUrl && srcUrl.includes('supabase.co')) {
+    const match = srcUrl.match(/public\/scorm\/(.+)/);
+    if (match && match[1]) {
+      srcUrl = `/api/scorm-cdn/${match[1]}`;
+    }
+  }
+
+  // Add cache buster to bypass old text/plain cached responses
+  srcUrl = srcUrl.includes('?') 
+    ? `${srcUrl}&t=${Date.now()}` 
+    : `${srcUrl}?t=${Date.now()}`;
 
   return (
-    <div className="w-full bg-white rounded-xl overflow-hidden border border-hairline shadow-subtle h-[900px]">
+    <div className="w-full relative bg-white rounded-xl overflow-hidden border border-hairline shadow-subtle h-[900px]">
+      {!iframeLoaded && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-canvas">
+          <Loader2 className="h-8 w-8 animate-spin text-brand-green mb-4" />
+          <p className="text-sm text-slate-500 font-medium">Loading course...</p>
+        </div>
+      )}
       <iframe
         ref={iframeRef}
         src={srcUrl}
-        className="w-full h-full border-none"
+        onLoad={() => setIframeLoaded(true)}
+        className={`w-full h-full border-none transition-opacity duration-500 ${iframeLoaded ? 'opacity-100' : 'opacity-0'}`}
         title="SCORM Player"
         sandbox="allow-scripts allow-same-origin allow-forms"
       />

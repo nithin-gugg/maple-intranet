@@ -52,7 +52,7 @@ export default function OnboardingPage() {
     const initOnboarding = async () => {
       try {
         const token = await getToken();
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/profile/sync`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/profile/sync`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -100,7 +100,7 @@ export default function OnboardingPage() {
       if (partialData.date_of_birth) payload.date_of_birth = new Date(partialData.date_of_birth).toISOString();
       if (partialData.joining_date) payload.joining_date = new Date(partialData.joining_date).toISOString();
 
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/profile/onboarding`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/profile/onboarding`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -123,7 +123,7 @@ export default function OnboardingPage() {
     setIsSaving(true);
     try {
       const token = await getToken();
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/profile/onboarding/complete`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/profile/onboarding/complete`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` }
       });

@@ -38,7 +38,7 @@ export default function NewCoursePage() {
         scormData.append("title", formData.title + " SCORM");
         scormData.append("file", scormFile);
 
-        const uploadRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/learning-packages/upload`, {
+        const uploadRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/learning-packages/upload`, {
           method: "POST",
           body: scormData,
         });
@@ -53,7 +53,7 @@ export default function NewCoursePage() {
       }
 
       // 2. Create Course Record
-      const courseRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/learning/courses`, {
+      const courseRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/learning/courses`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

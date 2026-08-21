@@ -10,7 +10,7 @@ export default function AdminCoursesPage() {
 
   const fetchCourses = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/learning/courses`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/learning/courses`);
       const data = await res.json();
       setCourses(data);
     } catch (err) {
@@ -27,7 +27,7 @@ export default function AdminCoursesPage() {
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this course? This will also remove any attached SCORM packages.")) return;
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/learning/courses/${id}`, { method: "DELETE" });
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/learning/courses/${id}`, { method: "DELETE" });
       setCourses(courses.filter(c => c.id !== id));
     } catch (err) {
       console.error(err);

@@ -22,8 +22,8 @@ export default function DocumentsPage() {
     const fetchDocuments = async () => {
       try {
         const url = activeCategory 
-          ? `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents?category_id=${activeCategory}` 
-          : `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents`;
+          ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/documents?category_id=${activeCategory}` 
+          : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/documents`;
         const res = await fetch(url);
         const data = await res.json();
         setDocuments(data || []);

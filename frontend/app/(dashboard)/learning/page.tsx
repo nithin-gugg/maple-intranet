@@ -18,7 +18,7 @@ export default function LearningCatalogPage() {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/learning/courses`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/learning/courses`);
         const data = await res.json();
         setCourses(data || []);
       } catch (err) {

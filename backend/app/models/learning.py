@@ -60,6 +60,12 @@ class LearningPackage(Base):
     standard: Mapped[str] = mapped_column(String(50), default="SCORM_1_2")
     standard_version: Mapped[str] = mapped_column(String(50), default="1.2")
     entry_point_url: Mapped[str] = mapped_column(String(1024))
+    storage_provider: Mapped[Optional[str]] = mapped_column(String(50))
+    storage_bucket: Mapped[Optional[str]] = mapped_column(String(50))
+    storage_path: Mapped[Optional[str]] = mapped_column(String(512))
+    storage_version: Mapped[Optional[str]] = mapped_column(String(50))
+    launch_file: Mapped[Optional[str]] = mapped_column(String(255))
+    package_version: Mapped[int] = mapped_column(default=1)
     uploaded_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

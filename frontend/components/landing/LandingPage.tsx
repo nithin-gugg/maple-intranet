@@ -1,331 +1,375 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowRight, Target, Eye, BookOpen, FileText, ChevronRight, PlayCircle, Clock } from "lucide-react";
+import {
+  ArrowRight, HeartPulse, CalendarDays, Stethoscope,
+  FileBox, User, Building, Heart, GraduationCap,
+  BookOpen, Folder, BriefcaseMedical, CheckCircle2,
+  Search, MapPin, SearchCode, Megaphone, ThumbsUp, Smile,
+  HelpCircle, BarChart, Mail, CreditCard, Star
+} from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { AITrendingNews } from "@/components/home/AITrendingNews";
+import { useUser } from "@clerk/nextjs";
 
-const CalendarWidget = dynamic(() => import("@/components/CalendarWidget"), { 
+const CalendarWidget = dynamic(() => import("@/components/CalendarWidget"), {
   ssr: false,
-  loading: () => <div className="h-[500px] bg-canvas animate-pulse rounded-xl" />
+  loading: () => <div className="h-[400px] bg-canvas animate-pulse rounded-xl" />
 });
 
-// Mock or fetched courses
-const fetchCourses = async () => {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/learning/courses`);
-    if (res.ok) {
-      return await res.json();
-    }
-  } catch (e) {
-    console.error(e);
-  }
-  return [];
-};
-
 export function LandingPage({ isPublic = false, isLoggedIn = false }: { isPublic?: boolean, isLoggedIn?: boolean }) {
-  const [courses, setCourses] = useState<any[]>([]);
-  const [activeVertical, setActiveVertical] = useState(0);
-  const [activeFaq, setActiveFaq] = useState<number | null>(null);
+  const { user } = useUser();
+  const firstName = user?.firstName || "Guest";
+
+  const [directoryStaff, setDirectoryStaff] = useState<any[]>([]);
+  const [loadingStaff, setLoadingStaff] = useState(true);
 
   useEffect(() => {
-    fetchCourses().then(data => setCourses(data.slice(0, 3))); // Show top 3
+    const fetchEmployees = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/employees`);
+        const data = await res.json();
+        setDirectoryStaff(data || []);
+      } catch (err) {
+        console.error("Failed to load employees", err);
+      } finally {
+        setLoadingStaff(false);
+      }
+    };
+    fetchEmployees();
   }, []);
 
-  const verticals = [
-    {
-      title: "Maple Learning Solutions",
-      description: "AI-powered eLearning company in India & UAE, building custom learning content and digital training programs for global workforces.",
-      img: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=800&auto=format&fit=crop"
-    },
-    {
-      title: "LXDGUILD & Academy",
-      description: "India's largest L&D community with 8000+ followers, connecting learning experience designers and running academy programs.",
-      img: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=800&auto=format&fit=crop"
-    },
-    {
-      title: "Maple Web Works",
-      description: "Modern, high-performance web design and development for brands that need a fast, polished digital presence.",
-      img: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=800&auto=format&fit=crop"
-    }
+  const resources = [
+    { name: "Benefits", icon: HeartPulse },
+    { name: "Payroll", icon: FileBox },
+    { name: "Time Off", icon: CalendarDays },
+    { name: "Policies & Procedures", icon: BookOpen },
+    { name: "Learning & Training", icon: GraduationCap },
+    { name: "IT Help Desk", icon: SearchCode },
+    { name: "Forms & Resources", icon: Folder },
+    { name: "Health & Wellness", icon: Heart },
+    { name: "Employee Directory", icon: User },
   ];
 
-  const faqs = [
-    { q: "How do I enroll in a course?", a: "You can visit the Learning Hub from your dashboard and click 'Get Started' on any available course." },
-    { q: "Where can I find HR policies?", a: "All company policies are securely stored in the Documents section." },
-    { q: "How is my progress tracked?", a: "Your learning progress is automatically synced with our SCORM engine as you complete modules." }
+  const heroLinks = [
+    { name: "Helpdesk", icon: SearchCode, color: "bg-green-600" },
+    { name: "Directory", icon: User, color: "bg-slate-600" },
+    { name: "Expenses", icon: CalendarDays, color: "bg-slate-500" },
+    { name: "Reports", icon: BarChart, color: "bg-yellow-500" },
+    { name: "Newsletter", icon: Mail, color: "bg-slate-500" },
+    { name: "Benefits", icon: HeartPulse, color: "bg-red-400" },
+    { name: "FAQs", icon: HelpCircle, color: "bg-orange-500" },
+    { name: "Training", icon: Star, color: "bg-green-500" },
+  ];
+
+  const staff = [
+    { name: "Luis Ponce", role: "Customer Success", dept: "Customer Success", location: "Vancouver", phone: "650-414-3605", email: "luis@maple.com", img: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=150&auto=format&fit=crop" },
+    { name: "Mariam Black", role: "Accounting Manager", dept: "Operations", location: "Not available", phone: "650-414-3605", email: "mblack@maple.com", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150&auto=format&fit=crop" },
+    { name: "John Smith", role: "Support", dept: "Support", location: "Not available", phone: "650-414-3605", email: "js@maple.com", img: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=150&auto=format&fit=crop" },
+    { name: "Sabina Saatgareeva", role: "Product Marketing Manager", dept: "Marketing", location: "HQ", phone: "650-414-3605", email: "sabina@maple.com", img: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=150&auto=format&fit=crop" },
   ];
 
   return (
-    <div className="bg-surface-soft min-h-screen font-sans selection:bg-brand-teal selection:text-white">
-      
-      {/* SECTION 1: Hero */}
-      <section className="relative overflow-hidden bg-brand-teal-deep text-white py-24 lg:py-32 px-6 lg:px-12 animate-in fade-in duration-700">
-        <div className="absolute inset-0 z-0 opacity-20">
-          <div className="absolute -top-24 -right-24 w-96 h-96 bg-brand-green rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-brand-teal rounded-full blur-3xl"></div>
-        </div>
-        
-        <div className="relative z-10 max-w-4xl mx-auto text-center space-y-8">
-          <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-brand-green font-medium text-sm mb-4">
-            Welcome to
+    <div className="bg-slate-50 min-h-screen font-sans">
+
+      {/* HERO SECTION */}
+      <section className="relative bg-[#001e2b] text-white pt-20 pb-20 overflow-hidden z-0">
+        {/* Geometric Background Patterns */}
+        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+          {/* Top Left Geometry */}
+          <div className="absolute -top-32 -left-32 w-[600px] h-[600px] opacity-90">
+            <div className="absolute top-0 left-0 w-full h-1/2 bg-brand-green/80 rounded-b-full mix-blend-screen"></div>
+            <div className="absolute bottom-0 right-0 w-1/2 h-1/2 bg-teal-600/60 rounded-tl-full mix-blend-screen"></div>
+            <div className="absolute bottom-1/4 left-1/4 w-32 h-32 bg-[#001e2b] rounded-full border-[16px] border-brand-green/80"></div>
           </div>
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-heading font-bold tracking-tight leading-tight">
-            Maple Learning Solutions
+          {/* Bottom Right Geometry */}
+          <div className="absolute -bottom-48 -right-48 w-[700px] h-[700px] opacity-90">
+            <div className="absolute bottom-0 right-0 w-1/2 h-full bg-teal-600/40 rounded-l-full mix-blend-screen"></div>
+            <div className="absolute top-1/4 right-1/4 w-40 h-40 bg-brand-green/80 rounded-full mix-blend-screen"></div>
+            <div className="absolute top-1/2 right-1/2 w-24 h-24 bg-[#001e2b] rounded-full"></div>
+            <div className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-lime-500/80 rounded-tr-full mix-blend-screen"></div>
+          </div>
+        </div>
+
+        <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white mb-10 mt-10">
+            Welcome, {firstName}!
           </h1>
-          <p className="text-xl md:text-2xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
-            A centralized space to share knowledge, streamline teamwork, and amplify learning excellence — built for every team, in every region.
-          </p>
-          
-          {isPublic && (
-            <div className="pt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-              {isLoggedIn ? (
-                <Link href="/dashboard" className="w-full sm:w-auto px-8 py-4 bg-brand-green text-brand-teal-deep font-semibold rounded-lg hover:bg-emerald-400 transition-colors shadow-lg hover:shadow-xl hover:-translate-y-0.5 duration-200">
-                  Go to Dashboard
-                </Link>
-              ) : (
-                <>
-                  <Link href="/sign-up" className="w-full sm:w-auto px-8 py-4 bg-brand-green text-brand-teal-deep font-semibold rounded-lg hover:bg-emerald-400 transition-colors shadow-lg hover:shadow-xl hover:-translate-y-0.5 duration-200">
-                    Get Started
-                  </Link>
-                  <Link href="/sign-in" className="w-full sm:w-auto px-8 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white font-medium rounded-lg transition-all duration-200">
-                    Sign In
-                  </Link>
-                </>
-              )}
+
+          {/* Search Bar */}
+          <div className="relative max-w-2xl mx-auto mb-12">
+            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-slate-400" />
             </div>
-          )}
+            <input
+              type="text"
+              placeholder="Search Forms & Templates"
+              className="w-full bg-white text-slate-900 rounded-full py-3 pl-12 pr-6 focus:outline-none focus:ring-2 focus:ring-brand-green shadow-lg"
+              suppressHydrationWarning
+            />
+          </div>
+
+          {/* Circular Quick Links */}
+          <div className="flex flex-wrap justify-center gap-6 md:gap-10">
+            {heroLinks.map((link, i) => (
+              <button key={i} suppressHydrationWarning className="flex flex-col items-center group">
+                <div className="w-16 h-16 rounded-full bg-slate-800/80 border border-slate-700/50 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg backdrop-blur-sm">
+                  <div className={`w-12 h-12 rounded-full ${link.color} flex items-center justify-center`}>
+                    <link.icon className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+                <span className="text-xs font-semibold text-slate-200 group-hover:text-white transition-colors">{link.name}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 space-y-24">
-        
-        {/* SECTION 2: About Maple */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center animate-in slide-in-from-bottom-8 duration-700 delay-100">
-          <div className="space-y-6">
-            <h2 className="text-brand-green font-semibold tracking-wider uppercase text-sm">About Maple</h2>
-            <h3 className="text-4xl font-heading font-bold text-ink leading-tight">
-              Learning solutions built around real performance.
-            </h3>
-            <p className="text-lg text-slate-600 leading-relaxed">
-              As an eLearning development company with effective learning content designers, we are passionate about creating effective eLearning solutions that focus on improving the skills, behaviour and performance of your workforce and thereby delivering tangible results to your organisation.
-            </p>
-          </div>
-          <div className="rounded-2xl overflow-hidden shadow-xl border border-hairline relative h-80">
-            <img src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=1000&auto=format&fit=crop" alt="Team collaborating" className="object-cover w-full h-full" />
-          </div>
-        </section>
+      {/* MAIN GRID: NEWS & RESOURCES */}
+      <section className="max-w-7xl mx-auto px-6 lg:px-12 pt-10 mb-16">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
 
-        {/* SECTION 3: Vision & Mission */}
-        <section className="bg-white rounded-3xl p-8 lg:p-12 shadow-subtle border border-hairline animate-in slide-in-from-bottom-8 duration-700 delay-200">
-          <div className="text-center mb-12">
-            <h2 className="text-brand-green font-semibold tracking-wider uppercase text-sm mb-2">Discover Maple</h2>
-            <h3 className="text-3xl font-heading font-bold text-ink">Vision & Mission</h3>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-24">
-            <div className="space-y-6">
-              <div className="h-12 w-12 rounded-xl bg-brand-teal/10 flex items-center justify-center">
-                <Eye className="h-6 w-6 text-brand-teal" />
-              </div>
-              <h4 className="text-2xl font-bold text-ink">Our Vision</h4>
-              <p className="text-slate-600">To empower organizations worldwide with innovative learning experiences, fostering skill growth, behavioural transformation, and measurable performance outcomes.</p>
-              <ul className="space-y-3 text-slate-600">
-                <li className="flex items-start"><ChevronRight className="h-5 w-5 text-brand-green shrink-0 mr-2" /> Transform workforce capability with modern learning.</li>
-                <li className="flex items-start"><ChevronRight className="h-5 w-5 text-brand-green shrink-0 mr-2" /> Drive digital learning adoption globally.</li>
-                <li className="flex items-start"><ChevronRight className="h-5 w-5 text-brand-green shrink-0 mr-2" /> Build future-ready talent through innovation.</li>
-              </ul>
+          {/* Left Column: News */}
+          <div className="lg:col-span-8 space-y-8">
+            <div className="flex items-center gap-4 border-b-2 border-slate-200 pb-2">
+              <div className="w-1.5 h-8 bg-brand-green rounded-full"></div>
+              <h2 className="text-2xl font-bold text-slate-900 tracking-tight uppercase">News & Updates</h2>
             </div>
-            
-            <div className="space-y-6">
-              <div className="h-12 w-12 rounded-xl bg-accent-orange/10 flex items-center justify-center">
-                <Target className="h-6 w-6 text-accent-orange" />
+
+            {/* The actual AI Trending News Widget */}
+            <div className="mt-6">
+              <AITrendingNews />
+            </div>
+
+            {/* Calendar Widget */}
+            <div className="mt-8">
+              <div className="flex items-center gap-4 border-b-2 border-slate-200 pb-2 mb-6">
+                <div className="w-1.5 h-8 bg-brand-green rounded-full"></div>
+                <h2 className="text-2xl font-bold text-slate-900 tracking-tight uppercase">Company Calendar</h2>
               </div>
-              <h4 className="text-2xl font-bold text-ink">Our Mission</h4>
-              <p className="text-slate-600">To deliver impactful eLearning solutions that enhance productivity, build strong capabilities, and enable sustainable growth in organizations of all sizes.</p>
-              <ul className="space-y-3 text-slate-600">
-                <li className="flex items-start"><ChevronRight className="h-5 w-5 text-brand-green shrink-0 mr-2" /> Deliver measurable learning outcomes.</li>
-                <li className="flex items-start"><ChevronRight className="h-5 w-5 text-brand-green shrink-0 mr-2" /> Support continuous training and upskilling.</li>
-                <li className="flex items-start"><ChevronRight className="h-5 w-5 text-brand-green shrink-0 mr-2" /> Create accessible and innovative learning ecosystems.</li>
-              </ul>
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 h-[400px] overflow-auto">
+                <CalendarWidget />
+              </div>
             </div>
           </div>
-        </section>
 
-        {/* SECTION 4: Our Verticals */}
-        <section>
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-heading font-bold text-ink">Our Verticals</h2>
-          </div>
-          
-          <div className="bg-canvas border border-hairline rounded-2xl overflow-hidden shadow-sm">
-            <div className="flex overflow-x-auto border-b border-hairline">
-              {verticals.map((v, i) => (
-                <button 
-                  key={i} 
-                  onClick={() => setActiveVertical(i)}
-                  className={`flex-1 py-4 px-6 text-sm font-semibold whitespace-nowrap transition-colors ${
-                    activeVertical === i 
-                      ? "bg-white text-brand-teal-deep border-b-2 border-brand-green" 
-                      : "text-slate-500 hover:text-ink hover:bg-white/50"
-                  }`}
-                >
-                  Vertical 0{i + 1}: {v.title.split(" ")[0]}
+          {/* Right Column: Resources */}
+          <div className="lg:col-span-4 space-y-8">
+            <div className="flex items-center gap-4 border-b-2 border-slate-200 pb-2">
+              <div className="w-1.5 h-8 bg-brand-green rounded-full"></div>
+              <h2 className="text-2xl font-bold text-slate-900 tracking-tight uppercase">Resources</h2>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+              {resources.map((res, i) => (
+                <button key={i} className="flex flex-col items-center justify-center p-4 bg-slate-800 text-white rounded-xl hover:bg-brand-green hover:text-black transition-all duration-200 shadow-sm group">
+                  <res.icon className="h-8 w-8 mb-3 opacity-80 group-hover:opacity-100" />
+                  <span className="text-xs font-semibold text-center leading-tight">{res.name}</span>
                 </button>
               ))}
             </div>
-            
-            <div className="p-8 lg:p-12 bg-white">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center animate-in fade-in zoom-in-95 duration-300" key={activeVertical}>
-                <div className="space-y-6">
-                  <h3 className="text-3xl font-bold text-ink">{verticals[activeVertical].title}</h3>
-                  <p className="text-lg text-slate-600">{verticals[activeVertical].description}</p>
-                  <button className="inline-flex items-center text-brand-teal font-medium hover:text-brand-teal-deep transition-colors">
-                    View Details <ArrowRight className="ml-2 h-4 w-4" />
-                  </button>
-                </div>
-                <div className="h-64 rounded-xl overflow-hidden bg-surface">
-                  <img src={verticals[activeVertical].img} alt={verticals[activeVertical].title} className="w-full h-full object-cover" />
-                </div>
-              </div>
+          </div>
+        </div>
+      </section>
+
+      {/* STAFF DIRECTORY SECTION */}
+      <section className="bg-white border-y border-slate-200 py-16 mb-16 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12">
+          <div className="flex flex-col items-center justify-center mb-10">
+            <h2 className="text-3xl font-bold text-slate-900 tracking-tight uppercase mb-4">Staff Directory</h2>
+            <div className="w-24 h-1.5 bg-brand-green rounded-full"></div>
+          </div>
+
+          {/* Search & Filters */}
+          <div className="max-w-4xl mx-auto space-y-4 mb-10">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search employees..."
+                className="w-full bg-slate-100 border border-slate-200 rounded-full py-4 pl-6 pr-12 focus:outline-none focus:ring-2 focus:ring-brand-green focus:bg-white transition-all"
+              />
+              <Search className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 h-5 w-5" />
+            </div>
+            <div className="flex gap-4">
+              <select className="bg-slate-800 text-white rounded-full px-6 py-2.5 text-sm font-medium focus:outline-none appearance-none cursor-pointer hover:bg-slate-700">
+                <option>Location</option>
+                <option>Vancouver</option>
+                <option>HQ</option>
+              </select>
+              <select className="bg-slate-800 text-white rounded-full px-6 py-2.5 text-sm font-medium focus:outline-none appearance-none cursor-pointer hover:bg-slate-700">
+                <option>Department</option>
+                <option>Marketing</option>
+                <option>Operations</option>
+              </select>
             </div>
           </div>
-        </section>
 
-        {/* Widgets Grid: Courses & Calendar */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          
-          {/* SECTION 5: Courses */}
-          <section className="bg-white rounded-2xl border border-hairline shadow-sm overflow-hidden flex flex-col h-full">
-            <div className="p-6 border-b border-hairline flex justify-between items-center bg-canvas">
-              <h3 className="text-xl font-heading font-bold text-ink flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-brand-teal" /> Featured Courses
-              </h3>
-              {!isPublic && <Link href="/learning" className="text-sm font-medium text-brand-green hover:underline">View All</Link>}
-            </div>
-            <div className="p-6 space-y-4 flex-1">
-              {courses.length > 0 ? courses.map(course => (
-                <div key={course.id} className="p-4 rounded-xl border border-hairline hover:border-brand-teal/30 bg-surface flex items-start gap-4 transition-colors">
-                  <div className="h-10 w-10 shrink-0 rounded-full bg-brand-teal/10 flex items-center justify-center mt-1">
-                    <PlayCircle className="h-5 w-5 text-brand-teal" />
+          {/* Staff Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+            {loadingStaff ? (
+              <div className="col-span-full py-12 text-center text-slate-500">Loading directory...</div>
+            ) : directoryStaff.slice(0, 4).map((emp, i) => {
+              const name = `${emp.user?.first_name || ""} ${emp.user?.last_name || ""}`.trim() || "Unknown";
+              const role = emp.designation || "Employee";
+              const dept = emp.department?.name || "No Department";
+              const location = emp.location || "Headquarters";
+              const img = emp.user?.profile_image_url || `https://ui-avatars.com/api/?name=${emp.user?.first_name}+${emp.user?.last_name}&background=random`;
+
+              return (
+                <div key={i} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 hover:shadow-md transition-shadow relative overflow-hidden group">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-green to-blue-500 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
+                  <div className="flex items-center gap-4 mb-6">
+                    {img ? (
+                      <img src={img} alt={name} className="w-14 h-14 rounded-full object-cover shadow-sm border border-slate-100" />
+                    ) : (
+                      <div className="w-14 h-14 rounded-full bg-slate-800 text-brand-green flex items-center justify-center font-bold text-xl">
+                        {name.split(" ").map((n: string) => n[0]).join("")}
+                      </div>
+                    )}
+                    <div>
+                      <h4 className="font-bold text-slate-900 line-clamp-1">{name}</h4>
+                      <p className="text-xs font-medium text-slate-500 line-clamp-1">{role}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-semibold text-ink line-clamp-1">{course.title}</h4>
-                    <p className="text-sm text-slate-500 line-clamp-2 mt-1">{course.description || "Learn the essentials."}</p>
-                    <div className="flex items-center gap-4 text-xs text-slate-400 mt-3">
-                      <span className="flex items-center"><Clock className="mr-1 h-3 w-3" /> Self-paced</span>
+
+                  <div className="space-y-3 text-xs text-slate-600">
+                    <div className="flex items-start gap-2">
+                      <Building className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="block text-slate-400">Department</span>
+                        <span className="font-medium text-slate-700 line-clamp-1">{dept}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="block text-slate-400">Office Location</span>
+                        <span className="font-medium text-slate-700 line-clamp-1">{location}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              )) : (
-                <div className="text-center py-12 text-slate-500 text-sm">No courses available.</div>
-              )}
-            </div>
-          </section>
-
-          {/* SECTION 6: Calendar Widget */}
-          <section className="bg-white rounded-2xl border border-hairline shadow-sm overflow-hidden flex flex-col h-[500px]">
-            <div className="p-6 border-b border-hairline bg-canvas">
-              <h3 className="text-xl font-heading font-bold text-ink">Company Schedule</h3>
-            </div>
-            <div className="p-4 flex-1 overflow-auto custom-calendar-wrapper">
-               {/* Wrapper limits height and scrolls internally */}
-               <CalendarWidget />
-            </div>
-          </section>
-        </div>
-
-        {/* SECTION 7: Documents Tabs (Placeholders) */}
-        <section className="bg-white rounded-2xl border border-hairline shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-hairline bg-canvas flex justify-between items-center">
-             <h3 className="text-xl font-heading font-bold text-ink flex items-center gap-2">
-                <FileText className="h-5 w-5 text-accent-purple" /> Important Documents
-              </h3>
+              );
+            })}
           </div>
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="p-5 rounded-xl border border-hairline bg-surface hover:shadow-subtle transition-shadow cursor-pointer group">
-                  <div className="flex justify-between items-start mb-4">
-                    <FileText className="h-8 w-8 text-slate-400 group-hover:text-accent-purple transition-colors" />
-                    <span className="text-xs font-medium px-2 py-1 bg-slate-200 text-slate-600 rounded">PDF</span>
-                  </div>
-                  <h4 className="font-semibold text-ink mb-1">Company Policy 0{i}</h4>
-                  <p className="text-sm text-slate-500">Updated recently</p>
+        </div>
+      </section>
+
+      {/* SHOUT-OUTS & QUICK POLL */}
+      <section className="max-w-7xl mx-auto px-6 lg:px-12 mb-24">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+
+          {/* Shout-outs */}
+          <div className="lg:col-span-2">
+            <div className="flex items-center gap-4 border-b-2 border-slate-200 pb-2 mb-6">
+              <div className="w-1.5 h-8 bg-brand-green rounded-full"></div>
+              <h2 className="text-2xl font-bold text-slate-900 tracking-tight uppercase">Shout-Outs</h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Shout Out Card 1 */}
+              <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+                <p className="text-sm text-slate-600 mb-4">
+                  <span className="font-bold text-slate-900">Sabina Saatgareeva</span> recognized <span className="font-bold text-slate-900">Mariam Black</span> on Aug 07
+                </p>
+                <div className="flex items-center gap-2 mb-4">
+                  <img src={staff[3].img} className="w-8 h-8 rounded-full" alt="Sabina" />
+                  <span className="text-xl">🎉</span>
+                  <img src={staff[1].img} className="w-8 h-8 rounded-full" alt="Mariam" />
                 </div>
-              ))}
+                <p className="text-sm text-slate-700 italic">
+                  "Thank you for stepping in to support the care team during an especially busy week. Your positivity and teamwork made a real difference!"
+                </p>
+                <div className="mt-4 flex items-center gap-4">
+                  <button className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-brand-green transition-colors">
+                    <ThumbsUp className="w-4 h-4" /> (0)
+                  </button>
+                </div>
+              </div>
+
+              {/* Shout Out Card 2 */}
+              <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+                <p className="text-sm text-slate-600 mb-4">
+                  <span className="font-bold text-slate-900">Sabina Saatgareeva</span> recognized <span className="font-bold text-slate-900">John Smith</span> on Sep 29
+                </p>
+                <div className="flex items-center gap-2 mb-4">
+                  <img src={staff[3].img} className="w-8 h-8 rounded-full" alt="Sabina" />
+                  <span className="text-xl">🤩</span>
+                  <img src={staff[2].img} className="w-8 h-8 rounded-full" alt="John" />
+                </div>
+                <p className="text-sm text-slate-700 italic">
+                  "John went above and beyond to help a patient and their family navigate their care options. Thank you for putting patients first!"
+                </p>
+                <div className="mt-4 flex items-center gap-4">
+                  <button className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-brand-green transition-colors">
+                    <ThumbsUp className="w-4 h-4" /> (0)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-between items-center">
+              <button className="bg-slate-900 text-white px-6 py-2 rounded-full text-sm font-semibold hover:bg-brand-green hover:text-slate-900 transition-colors">
+                Give Praise
+              </button>
             </div>
           </div>
-        </section>
 
-        {/* SECTION 8: FAQ's */}
-        <section className="max-w-3xl mx-auto py-12">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-heading font-bold text-ink">Frequently Asked Questions</h2>
-          </div>
-          <div className="space-y-4">
-            {faqs.map((faq, i) => (
-              <div key={i} className="border border-hairline bg-white rounded-xl overflow-hidden shadow-sm">
-                <button 
-                  onClick={() => setActiveFaq(activeFaq === i ? null : i)}
-                  className="w-full px-6 py-4 flex justify-between items-center text-left focus:outline-none"
-                >
-                  <span className="font-semibold text-ink">{faq.q}</span>
-                  <ChevronRight className={`h-5 w-5 text-slate-400 transition-transform ${activeFaq === i ? "rotate-90" : ""}`} />
-                </button>
-                {activeFaq === i && (
-                  <div className="px-6 pb-4 text-slate-600 animate-in fade-in slide-in-from-top-2 duration-200">
-                    {faq.a}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-
-      </div>
-
-      {/* SECTION 9: Footer */}
-      <footer className="bg-brand-teal-deep text-slate-400 py-12 border-t border-brand-teal/20">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div className="col-span-1 md:col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="h-8 w-8 rounded-full bg-brand-green flex items-center justify-center">
-                <span className="text-brand-teal-deep font-bold">M</span>
-              </div>
-              <span className="text-xl font-bold font-heading text-white">Maple</span>
+          {/* Quick Poll */}
+          <div>
+            <div className="flex items-center gap-4 border-b-2 border-slate-200 pb-2 mb-6">
+              <div className="w-1.5 h-8 bg-brand-green rounded-full"></div>
+              <h2 className="text-2xl font-bold text-slate-900 tracking-tight uppercase">Quick Poll</h2>
             </div>
-            <p className="max-w-md">Empowering organizations worldwide with innovative learning experiences.</p>
+
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="bg-slate-800 p-4 text-right">
+                <span className="text-xs font-medium text-slate-300">0 votes • 3 days left</span>
+              </div>
+              <div className="p-6">
+                <h4 className="font-bold text-slate-900 mb-6">How satisfied are you with our intranet?</h4>
+                <div className="space-y-4">
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input type="radio" name="poll" className="w-4 h-4 text-brand-green border-slate-300 focus:ring-brand-green" />
+                    <span className="text-sm text-slate-700 group-hover:text-slate-900">😍 Very satisfied</span>
+                  </label>
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input type="radio" name="poll" className="w-4 h-4 text-brand-green border-slate-300 focus:ring-brand-green" />
+                    <span className="text-sm text-slate-700 group-hover:text-slate-900">😊 Satisfied</span>
+                  </label>
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input type="radio" name="poll" className="w-4 h-4 text-brand-green border-slate-300 focus:ring-brand-green" />
+                    <span className="text-sm text-slate-700 group-hover:text-slate-900">😐 Neutral</span>
+                  </label>
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input type="radio" name="poll" className="w-4 h-4 text-brand-green border-slate-300 focus:ring-brand-green" />
+                    <span className="text-sm text-slate-700 group-hover:text-slate-900">😠 Dissatisfied</span>
+                  </label>
+                </div>
+                <div className="mt-8 flex justify-end">
+                  <button className="bg-slate-900 text-white px-8 py-2 rounded-full text-sm font-semibold hover:bg-brand-green hover:text-slate-900 transition-colors">
+                    Vote
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <h4 className="text-white font-semibold mb-4">Platform</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link></li>
-              <li><Link href="/learning" className="hover:text-white transition-colors">Learning Hub</Link></li>
-              <li><Link href="/documents" className="hover:text-white transition-colors">Documents</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-white font-semibold mb-4">Legal</h4>
-            <ul className="space-y-2 text-sm">
-              <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
-            </ul>
-          </div>
+
         </div>
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 mt-12 pt-8 border-t border-white/10 text-sm text-center md:text-left">
-          &copy; 2026 Maple Learning Solutions. All rights reserved.
+      </section>
+
+      {/* FOOTER */}
+      <footer className="bg-black text-slate-400 py-8 border-t border-brand-green/20">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between">
+          <div className="text-sm mb-4 md:mb-0">
+            &copy; 2026 Maple Learning Solutions
+          </div>
+          <div className="text-sm">
+            Intranet contact: <a href="mailto:support@maple.com" className="text-brand-green hover:underline">support@maple.com</a>
+          </div>
         </div>
       </footer>
-
-      <style dangerouslySetInnerHTML={{__html: `
-        .custom-calendar-wrapper .fc {
-          height: 400px !important;
-        }
-        .custom-calendar-wrapper .fc-toolbar-title {
-          font-size: 1.1rem !important;
-        }
-      `}} />
     </div>
   );
 }

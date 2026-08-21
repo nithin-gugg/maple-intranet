@@ -2,9 +2,10 @@ from fastapi import APIRouter
 from fastapi.staticfiles import StaticFiles
 import os
 
-from app.api.routers import employees, departments, documents, calendar, announcements, learning, ai, analytics, scorm, scorm_runtime, scorm2004_runtime, profile, learning_packages, xapi, cmi5
+from app.api.routers import employees, departments, documents, calendar, announcements, learning, ai, analytics, scorm, scorm_runtime, scorm2004_runtime, profile, learning_packages, xapi, cmi5, news, auth
 
 api_router = APIRouter()
+api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
 api_router.include_router(profile.router, prefix="/profile", tags=["profile"])
 api_router.include_router(employees.router, prefix="/employees", tags=["employees"])
 api_router.include_router(departments.router, prefix="/departments", tags=["departments"])
@@ -20,3 +21,4 @@ api_router.include_router(scorm2004_runtime.router, prefix="/scorm/2004/runtime"
 api_router.include_router(xapi.router, prefix="/xapi", tags=["xapi"])
 api_router.include_router(cmi5.router, prefix="/cmi5", tags=["cmi5"])
 api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
+api_router.include_router(news.router, prefix="/news", tags=["news"])

@@ -57,12 +57,33 @@ async def upload_learning_package(
             extractor = Cmi5Extractor()
             result = extractor.extract(temp_path, pkg_id)
 
+        # Upload to Supabase Storage
+        from app.learning.services.storage import SupabaseStorageService
+        storage_service = SupabaseStorageService()
+        storage_base_path = f"scorm/{pkg_id}/v1"
+        
+        if "local_path" in result:
+            storage_service.upload_directory(result["local_path"], storage_base_path)
+            
+            # Clean up local extracted files after successful upload
+            if os.path.exists(result["local_path"]):
+                shutil.rmtree(result["local_path"])
+
+        launch_file = result.get("launch_file", "")
+        entry_point_url = storage_service.get_public_url(f"{storage_base_path}/{launch_file}") if launch_file else ""
+
         package = LearningPackage(
             title=title,
             version=version,
             standard=standard.value,
             standard_version="1.2" if standard == PackageStandard.SCORM_1_2 else "Unknown",
-            entry_point_url=result.get("entry_point_url", ""),
+            entry_point_url=entry_point_url,
+            storage_provider="supabase",
+            storage_bucket=storage_service.bucket_name,
+            storage_path=storage_base_path,
+            storage_version="v1",
+            launch_file=launch_file,
+            package_version=1,
             uploaded_by="temp_admin_user" # Mocked for now
         )
         db.add(package)
@@ -74,7 +95,9 @@ async def upload_learning_package(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error during extraction.")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Internal server error during extraction/upload.")
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)

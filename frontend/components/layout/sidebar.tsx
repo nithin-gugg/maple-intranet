@@ -37,47 +37,30 @@ export function Sidebar() {
   const { user } = useUser();
   const role = user?.publicMetadata?.role as string | undefined;
   const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
 
   return (
-    <div className={cn(
-      "flex h-full flex-col bg-brand-teal-deep text-on-dark border-r border-hairline-dark overflow-y-auto transition-all duration-300",
-      isCollapsed ? "w-16" : "w-64"
-    )}>
+    <div 
+      className={cn(
+        "flex h-full flex-col bg-brand-teal-deep text-on-dark border-r border-hairline-dark overflow-y-auto transition-all duration-300 relative z-50",
+        isCollapsed ? "w-16" : "w-64 absolute h-full shadow-2xl"
+      )}
+      onMouseEnter={() => setIsCollapsed(false)}
+      onMouseLeave={() => setIsCollapsed(true)}
+    >
       <div className={cn("flex h-16 items-center shrink-0 border-b border-white/10", isCollapsed ? "justify-center px-0" : "justify-between px-4")}>
-        {!isCollapsed && (
-          <div className="flex items-center gap-2 overflow-hidden">
+        {!isCollapsed ? (
+          <div className="flex items-center gap-2 overflow-hidden w-full px-2">
             <div className="h-8 w-8 shrink-0 rounded-full bg-brand-green flex items-center justify-center">
               <span className="text-primary font-bold">M</span>
             </div>
             <span className="text-xl font-bold font-heading text-white tracking-tight whitespace-nowrap">Maple</span>
           </div>
+        ) : (
+          <div className="h-8 w-8 shrink-0 rounded-full bg-brand-green flex items-center justify-center">
+            <span className="text-primary font-bold">M</span>
+          </div>
         )}
-        
-        <button 
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className={cn(
-            "p-1.5 rounded-md hover:bg-white/10 text-slate-400 hover:text-white transition-colors",
-            isCollapsed && "mx-auto"
-          )}
-          title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            {isCollapsed ? (
-              <>
-                <rect width="18" height="18" x="3" y="3" rx="2" />
-                <path d="M9 3v18" />
-                <path d="m14 9 3 3-3 3" />
-              </>
-            ) : (
-              <>
-                <rect width="18" height="18" x="3" y="3" rx="2" />
-                <path d="M15 3v18" />
-                <path d="m10 15-3-3 3-3" />
-              </>
-            )}
-          </svg>
-        </button>
       </div>
       <nav className={cn("flex-1 space-y-1 py-4", isCollapsed ? "px-2" : "px-4")}>
         {sidebarLinks.map((item) => {

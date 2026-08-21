@@ -23,8 +23,8 @@ export default function NewDocumentPage() {
     const fetchMetadata = async () => {
       try {
         const [catRes, depRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/categories`),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/departments`)
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/documents/categories`),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/departments`)
         ]);
         const catData = await catRes.json();
         const depData = await depRes.json();
@@ -49,7 +49,7 @@ export default function NewDocumentPage() {
     setIsSaving(true);
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/documents`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -17,7 +17,9 @@ export default async function DashboardLayout({
 
   if (token) {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/profile/sync`, {
+      const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/profile/sync`;
+      console.log("Fetching profile from:", url);
+      const res = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`
         },

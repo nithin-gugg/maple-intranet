@@ -45,7 +45,8 @@ class Cmi5Extractor:
             return {
                 "package_id": package_id,
                 "entry_point_url": f"/static/cmi5/{package_id}/{launch_file}",
-                "local_path": str(package_dir)
+                "local_path": str(package_dir),
+                "launch_file": launch_file
             }
         except Exception as e:
             if package_dir.exists():

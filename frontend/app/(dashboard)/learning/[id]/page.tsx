@@ -15,7 +15,7 @@ export default function CoursePlayerPage({ params }: { params: Promise<{ id: str
   useEffect(() => {
     const fetchCourse = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/learning/courses/${id}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/learning/courses/${id}`);
         if (!res.ok) throw new Error("Course not found");
         const data = await res.json();
         setCourse(data);
@@ -39,10 +39,13 @@ export default function CoursePlayerPage({ params }: { params: Promise<{ id: str
   const scormModule = course.modules?.find((m: any) => m.content_type === "SCORM" && m.learning_package);
   const learningPackage = scormModule?.learning_package;
 
-  // Use the Next.js proxy to avoid CORS issues
-  const proxiedUrl = learningPackage?.entry_point_url 
-    ? learningPackage.entry_point_url.replace('/static/', '/api/learning-static/')
-    : null;
+  // Use the Next.js proxy to avoid CORS issues for legacy local files
+  let proxiedUrl = learningPackage?.entry_point_url;
+  if (proxiedUrl) {
+    if (proxiedUrl.startsWith('/static/')) {
+      proxiedUrl = proxiedUrl.replace('/static/', '/api/learning-static/');
+    }
+  }
 
   return (
     <div className="flex flex-col h-full w-full">

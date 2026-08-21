@@ -3,6 +3,8 @@
 import { BookOpen, Calendar as CalendarIcon, FileText, ArrowRight, PlayCircle, Clock } from "lucide-react";
 import Link from "next/link";
 
+import { AITrendingNews } from "@/components/home/AITrendingNews";
+
 export default function EmployeeDashboardPage() {
   const upcomingEvents = [
     { id: 1, title: "Company All-Hands Q3", time: "Tomorrow, 10:00 AM", type: "MEETING" },
@@ -34,6 +36,9 @@ export default function EmployeeDashboardPage() {
         
         {/* Main Column */}
         <div className="xl:col-span-2 space-y-8">
+          
+          <AITrendingNews />
+
           
           {/* Continue Learning */}
           <section className="bg-canvas rounded-xl border border-hairline p-6 shadow-sm">
