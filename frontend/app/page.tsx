@@ -1,21 +1,19 @@
 import { LandingPage } from "@/components/landing/LandingPage";
-import { Sidebar } from "@/components/layout/sidebar";
+import { TopNav } from "@/components/layout/top-nav";
 import { auth } from "@clerk/nextjs/server";
 
 export default async function Home() {
   const authState = await auth();
   const token = await authState.getToken();
   
-  if (token) {
-    return (
-      <div className="flex h-screen overflow-hidden bg-slate-50">
-        <Sidebar />
-        <div className="flex-1 overflow-auto">
-          <LandingPage isPublic={true} isLoggedIn={true} />
-        </div>
+  return (
+    <div className="relative flex h-screen flex-col overflow-hidden bg-slate-50">
+      <div className="absolute top-0 left-0 right-0 z-50">
+        <TopNav />
       </div>
-    );
-  }
-
-  return <LandingPage isPublic={true} isLoggedIn={false} />;
+      <div id="main-scroll-container" className="flex-1 overflow-auto h-full">
+        <LandingPage isPublic={true} isLoggedIn={!!token} />
+      </div>
+    </div>
+  );
 }

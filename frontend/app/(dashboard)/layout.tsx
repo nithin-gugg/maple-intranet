@@ -1,4 +1,3 @@
-import { Sidebar } from "@/components/layout/sidebar";
 import { TopNav } from "@/components/layout/top-nav";
 import { MainContent } from "./main-content";
 
@@ -41,7 +40,6 @@ export default async function DashboardLayout({
   }
   return (
     <div className="flex h-screen overflow-hidden bg-surface-soft">
-      <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopNav />
         <MainContent>{children}</MainContent>

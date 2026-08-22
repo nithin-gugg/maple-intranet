@@ -1,34 +1,80 @@
 "use client";
 
-import { Megaphone, AlertCircle, CalendarClock, ChevronRight } from "lucide-react";
+import { Megaphone, AlertCircle, CalendarClock, ChevronRight, Plus, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useUser, useAuth } from "@clerk/nextjs";
+import { useWebSocket } from "@/hooks/use-websocket";
+import { toast } from "sonner";
 
 export default function AnnouncementsPage() {
-  const mockAnnouncements = [
-    {
-      id: "1",
-      title: "Q3 Town Hall Meeting Scheduled",
-      content: "Join us for the upcoming Q3 Town Hall where we will discuss our latest product launches, revenue milestones, and plans for the next quarter. All employees are expected to attend.",
-      priority: "HIGH",
-      date: "Oct 12, 2026",
-      author: "Jane Doe (Leadership)"
-    },
-    {
-      id: "2",
-      title: "New Expense Policy Updates",
-      content: "We have updated the travel and expense policy effective immediately. Please review the new guidelines in the Documents portal before submitting any new expense reports for October.",
-      priority: "NORMAL",
-      date: "Oct 10, 2026",
-      author: "Michael Torres (HR)"
-    },
-    {
-      id: "3",
-      title: "Office Renovation - 3rd Floor",
-      content: "The 3rd-floor breakroom will be closed for renovations starting next Monday. Please use the 2nd-floor facilities in the meantime. We expect the renovations to be completed within two weeks.",
-      priority: "LOW",
-      date: "Oct 05, 2026",
-      author: "Facilities Team"
+  const { user, isLoaded } = useUser();
+  const { getToken } = useAuth();
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { lastMessage } = useWebSocket();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newAnnouncement, setNewAnnouncement] = useState({ title: '', content: '', priority: 'NORMAL' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const role = user?.publicMetadata?.role as string | undefined;
+  const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
+
+  useEffect(() => {
+    fetchAnnouncements();
+  }, []);
+
+  useEffect(() => {
+    if (lastMessage?.type === 'NEW_ANNOUNCEMENT') {
+      setAnnouncements(prev => [lastMessage.data, ...prev]);
+      // Optional: Play a sound or show a toast if not on the page
     }
-  ];
+  }, [lastMessage]);
+
+  const fetchAnnouncements = async () => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/announcements`);
+      if (res.ok) {
+        const data = await res.json();
+        setAnnouncements(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch announcements", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAnnouncement.title || !newAnnouncement.content) return;
+    
+    setIsSubmitting(true);
+    try {
+      const token = await getToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/announcements`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newAnnouncement)
+      });
+      
+      if (res.ok) {
+        toast.success("Broadcast sent successfully!");
+        setIsModalOpen(false);
+        setNewAnnouncement({ title: '', content: '', priority: 'NORMAL' });
+        // No need to fetch, WebSocket will push it to us!
+      } else {
+        toast.error("Failed to send broadcast.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("An error occurred.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
@@ -37,13 +83,83 @@ export default function AnnouncementsPage() {
           <h1 className="text-display-lg font-heading tracking-tight text-ink">Announcements</h1>
           <p className="mt-2 text-subtitle text-slate-500">Stay updated with the latest company news and broadcasts.</p>
         </div>
-        <button className="hidden sm:inline-flex items-center rounded-full bg-brand-green text-on-dark hover:bg-brand-green-dark px-6 py-2.5 text-sm font-semibold transition-colors">
-          New Broadcast
-        </button>
+        {isAdmin && (
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="hidden sm:inline-flex items-center rounded-full bg-brand-green text-on-dark hover:bg-brand-green-dark px-6 py-2.5 text-sm font-semibold transition-colors shadow-sm shadow-brand-green/20"
+          >
+            <Plus className="w-4 h-4 mr-2" /> New Broadcast
+          </button>
+        )}
       </div>
 
-      <div className="space-y-4">
-        {mockAnnouncements.map((announcement) => (
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-canvas border border-hairline rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="p-6 border-b border-hairline">
+              <h2 className="text-xl font-bold text-ink">New Broadcast</h2>
+              <p className="text-sm text-slate-500 mt-1">Send a real-time announcement to all employees.</p>
+            </div>
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
+                <input 
+                  type="text" required
+                  value={newAnnouncement.title}
+                  onChange={(e) => setNewAnnouncement({...newAnnouncement, title: e.target.value})}
+                  className="w-full px-3 py-2 border border-hairline rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green/50 bg-surface"
+                  placeholder="e.g., Q3 Town Hall Meeting"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Priority</label>
+                <select 
+                  value={newAnnouncement.priority}
+                  onChange={(e) => setNewAnnouncement({...newAnnouncement, priority: e.target.value})}
+                  className="w-full px-3 py-2 border border-hairline rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green/50 bg-surface"
+                >
+                  <option value="NORMAL">Normal</option>
+                  <option value="HIGH">High (Urgent)</option>
+                  <option value="LOW">Low</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Message</label>
+                <textarea 
+                  required rows={4}
+                  value={newAnnouncement.content}
+                  onChange={(e) => setNewAnnouncement({...newAnnouncement, content: e.target.value})}
+                  className="w-full px-3 py-2 border border-hairline rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green/50 bg-surface"
+                  placeholder="Announcement details..."
+                />
+              </div>
+              <div className="flex items-center justify-end gap-3 pt-4">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
+                  Cancel
+                </button>
+                <button type="submit" disabled={isSubmitting} className="inline-flex items-center rounded-md bg-brand-green text-on-dark hover:bg-brand-green-dark px-6 py-2 text-sm font-semibold transition-colors disabled:opacity-50">
+                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Megaphone className="w-4 h-4 mr-2" />}
+                  Send Broadcast
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-brand-green" />
+        </div>
+      ) : announcements.length === 0 ? (
+        <div className="text-center py-12 bg-surface rounded-xl border border-dashed border-hairline">
+          <Megaphone className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <h3 className="text-lg font-medium text-slate-900">No Announcements</h3>
+          <p className="text-slate-500 text-sm mt-1">There are no active broadcasts at the moment.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {announcements.map((announcement) => (
           <div key={announcement.id} className="bg-canvas p-6 rounded-lg border border-hairline shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
@@ -56,9 +172,9 @@ export default function AnnouncementsPage() {
                 <div>
                   <h3 className="text-heading-4 font-semibold text-ink">{announcement.title}</h3>
                   <div className="flex items-center gap-2 text-sm text-slate-500 mt-1">
-                    <span className="font-medium">{announcement.author}</span>
+                    <span className="font-medium">{announcement.author || "Admin"}</span>
                     <span>•</span>
-                    <span className="flex items-center"><CalendarClock className="mr-1 h-3 w-3" /> {announcement.date}</span>
+                    <span className="flex items-center"><CalendarClock className="mr-1 h-3 w-3" /> {new Date(announcement.created_at || announcement.date).toLocaleDateString()}</span>
                   </div>
                 </div>
               </div>
@@ -76,6 +192,7 @@ export default function AnnouncementsPage() {
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 }
