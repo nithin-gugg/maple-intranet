@@ -20,19 +20,21 @@ class PackageDetector:
             with zipfile.ZipFile(zip_filepath, 'r') as zip_ref:
                 files = zip_ref.namelist()
                 
-                # Check for cmi5 or xAPI anywhere in the zip
                 has_cmi5 = any(f.endswith('cmi5.xml') for f in files)
                 has_xapi = any(f.endswith('tincan.xml') for f in files)
                 has_scorm = any(f.endswith('imsmanifest.xml') for f in files)
 
                 if has_cmi5:
                     return PackageStandard.CMI5
-                if has_xapi:
-                    return PackageStandard.XAPI
+                
+                # Many SCORM 1.2/2004 packages also contain a tincan.xml fallback driver.
+                # Prioritize SCORM detection if imsmanifest.xml exists.
                 if has_scorm:
-                    # Find the manifest path
                     manifest_path = next(f for f in files if f.endswith('imsmanifest.xml'))
                     return self._detect_scorm_version(zip_ref, manifest_path)
+                    
+                if has_xapi:
+                    return PackageStandard.XAPI
                 
         except Exception:
             return PackageStandard.UNKNOWN

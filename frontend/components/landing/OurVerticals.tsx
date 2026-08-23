@@ -118,6 +118,7 @@ export function OurVerticals() {
               onClick={handlePrev} 
               aria-label="Previous vertical"
               className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center hover:bg-brand-green hover:text-black transition-colors duration-200 shadow-sm"
+              suppressHydrationWarning
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -125,6 +126,7 @@ export function OurVerticals() {
               onClick={handleNext} 
               aria-label="Next vertical"
               className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center hover:bg-brand-green hover:text-black transition-colors duration-200 shadow-sm"
+              suppressHydrationWarning
             >
               <ArrowRight className="w-5 h-5" />
             </button>

@@ -5,11 +5,11 @@ from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.models.learning import LearningPackage
-from app.scorm.extractor import ScormExtractor
+from app.models.learning import LearningPackage, Cmi5AssignableUnit
+from app.learning.repositories.package_repository import PackageRepository
 
 router = APIRouter()
-extractor = ScormExtractor()
+package_repo = PackageRepository()
 
 @router.post("/upload")
 async def upload_scorm_package(
@@ -27,21 +27,39 @@ async def upload_scorm_package(
         with os.fdopen(temp_fd, "wb") as temp_file:
             shutil.copyfileobj(file.file, temp_file)
         
-        # Extract and parse
-        result = extractor.extract_package(temp_path)
+        # Extract and parse via unified repository
+        result = package_repo.extract_and_detect(temp_path)
         
         # Save metadata to DB
         package = LearningPackage(
             title=title,
             version=version,
-            standard="SCORM_1_2",
-            standard_version="1.2",
+            standard=result["package_type"].upper(),
+            standard_version="1.2" if result["package_type"] == "scorm_1_2" else "2004" if result["package_type"] == "scorm_2004" else "1.0",
+            package_type=result["package_type"],
+            manifest_path=result.get("manifest_path", ""),
+            package_hash=result.get("package_hash", ""),
             entry_point_url=result["entry_point_url"],
             uploaded_by="temp_admin_user" # Mocked for now
         )
         db.add(package)
         await db.commit()
         await db.refresh(package)
+        
+        # Persist CMI5 AUs if metadata exists
+        cmi5_meta = result.get("cmi5_metadata")
+        if cmi5_meta and "aus" in cmi5_meta:
+            for au_data in cmi5_meta["aus"]:
+                db_au = Cmi5AssignableUnit(
+                    package_id=package.id,
+                    au_id=au_data.get("id", ""),
+                    title=au_data.get("title", "AU"),
+                    launch_method=au_data.get("launchMethod", "AnyWindow"),
+                    move_on=au_data.get("moveOn", "CompletedAndPassed"),
+                    mastery_score=au_data.get("masteryScore")
+                )
+                db.add(db_au)
+            await db.commit()
         
         return {"id": package.id, "title": package.title, "entry_point_url": package.entry_point_url}
 

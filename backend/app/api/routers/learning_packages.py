@@ -17,6 +17,7 @@ detector = PackageDetector()
 async def upload_learning_package(
     title: str = Form(...),
     version: str = Form("1.0"),
+    declared_standard: str = Form(None),
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db)
 ):
@@ -28,31 +29,31 @@ async def upload_learning_package(
         with os.fdopen(temp_fd, "wb") as temp_file:
             shutil.copyfileobj(file.file, temp_file)
         
-        standard = detector.detect(temp_path)
+        detected_std = detector.detect(temp_path)
         
-        if standard == PackageStandard.UNKNOWN:
+        if detected_std == PackageStandard.UNKNOWN:
             raise HTTPException(status_code=400, detail="Unsupported package format")
 
         import uuid
         pkg_id = str(uuid.uuid4())
         
         result = {}
-        if standard == PackageStandard.SCORM_1_2:
+        if detected_std == PackageStandard.SCORM_1_2:
             from app.standards.scorm.scorm12.extractor import Scorm12Extractor
             extractor = Scorm12Extractor()
             result = extractor.extract(temp_path, pkg_id)
             
-        elif standard == PackageStandard.SCORM_2004:
+        elif detected_std == PackageStandard.SCORM_2004:
             from app.standards.scorm.scorm2004.extractor import Scorm2004Extractor
             extractor = Scorm2004Extractor()
             result = extractor.extract(temp_path, pkg_id)
             
-        elif standard == PackageStandard.XAPI:
+        elif detected_std == PackageStandard.XAPI:
             from app.standards.xapi.extractor import XapiExtractor
             extractor = XapiExtractor()
             result = extractor.extract(temp_path, pkg_id)
             
-        elif standard == PackageStandard.CMI5:
+        elif detected_std == PackageStandard.CMI5:
             from app.standards.cmi5.extractor import Cmi5Extractor
             extractor = Cmi5Extractor()
             result = extractor.extract(temp_path, pkg_id)
@@ -72,11 +73,14 @@ async def upload_learning_package(
         launch_file = result.get("launch_file", "")
         entry_point_url = storage_service.get_public_url(f"{storage_base_path}/{launch_file}") if launch_file else ""
 
+        # Using detected standard as the active standard
         package = LearningPackage(
             title=title,
             version=version,
-            standard=standard.value,
-            standard_version="1.2" if standard == PackageStandard.SCORM_1_2 else "Unknown",
+            standard=detected_std.value,
+            detected_standard=detected_std.value,
+            declared_standard=declared_standard,
+            standard_version="1.2" if detected_std == PackageStandard.SCORM_1_2 else "Unknown",
             entry_point_url=entry_point_url,
             storage_provider="supabase",
             storage_bucket=storage_service.bucket_name,

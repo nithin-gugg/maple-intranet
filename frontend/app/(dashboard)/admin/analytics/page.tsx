@@ -6,6 +6,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 export default function DashboardPage() {
   const [metrics, setMetrics] = useState<any>(null);
+  const [completions, setCompletions] = useState<any[]>([]);
 
   useEffect(() => {
     // In a real app, we would fetch from /api/v1/analytics/metrics
@@ -30,6 +31,18 @@ export default function DashboardPage() {
             { name: "HR", value: 92 },
         ]
     });
+
+    const fetchCompletions = async () => {
+      try {
+        const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/learning/analytics/completions`;
+        const res = await fetch(url);
+        const data = await res.json();
+        setCompletions(data || []);
+      } catch (err) {
+        console.error("Failed to fetch completions:", err);
+      }
+    };
+    fetchCompletions();
   }, []);
 
   if (!metrics) return null;
@@ -109,6 +122,59 @@ export default function DashboardPage() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+        </div>
+      </div>
+
+      {/* Completion Leaderboard */}
+      <div className="bg-canvas p-6 rounded-lg border border-hairline shadow-sm">
+        <h3 className="text-heading-5 font-semibold text-ink mb-6">Course Completions Leaderboard</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-hairline">
+                <th className="py-3 px-4 font-semibold text-sm text-slate-500">Course Name</th>
+                <th className="py-3 px-4 font-semibold text-sm text-slate-500">User ID</th>
+                <th className="py-3 px-4 font-semibold text-sm text-slate-500">Status</th>
+                <th className="py-3 px-4 font-semibold text-sm text-slate-500">Progress</th>
+                <th className="py-3 px-4 font-semibold text-sm text-slate-500">Completed At</th>
+              </tr>
+            </thead>
+            <tbody>
+              {completions.length > 0 ? completions.map((comp: any, idx: number) => (
+                <tr key={idx} className="border-b border-hairline hover:bg-slate-50/50 transition-colors">
+                  <td className="py-3 px-4 font-medium text-ink">{comp.course_title}</td>
+                  <td className="py-3 px-4 text-slate-600">{comp.user_id}</td>
+                  <td className="py-3 px-4">
+                    <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                      comp.status === 'completed' || comp.status === 'passed' 
+                        ? 'bg-brand-green/20 text-brand-green' 
+                        : comp.status === 'failed'
+                        ? 'bg-accent-red/20 text-accent-red'
+                        : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      {comp.status || 'incomplete'}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-600 w-10">{comp.progress_percent || 0}%</span>
+                      <div className="w-24 bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                        <div 
+                          className="bg-brand-green h-1.5 transition-all duration-500"
+                          style={{ width: `${comp.progress_percent || 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4 text-slate-600">{comp.completed_at ? new Date(comp.completed_at).toLocaleDateString() : '-'}</td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-slate-500">No completion data available yet.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

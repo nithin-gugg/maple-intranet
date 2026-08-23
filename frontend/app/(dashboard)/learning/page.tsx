@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { PlayCircle, Clock, Search, ChevronRight } from "lucide-react";
+import { useAuth } from "@clerk/nextjs";
 
 export default function LearningCatalogPage() {
   const categories = [
@@ -11,6 +12,7 @@ export default function LearningCatalogPage() {
     { name: "General Training", tagClass: "bg-brand-green text-on-dark" }
   ];
 
+  const { userId } = useAuth();
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -18,7 +20,11 @@ export default function LearningCatalogPage() {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/learning/courses`);
+        const url = new URL(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/learning/courses`);
+        if (userId) {
+            url.searchParams.append("user_id", userId);
+        }
+        const res = await fetch(url.toString());
         const data = await res.json();
         setCourses(data || []);
       } catch (err) {
@@ -27,8 +33,10 @@ export default function LearningCatalogPage() {
         setLoading(false);
       }
     };
-    fetchCourses();
-  }, []);
+    if (userId !== undefined) {
+        fetchCourses();
+    }
+  }, [userId]);
 
   const filteredCourses = courses.filter(c => 
     c.title?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -48,15 +56,18 @@ export default function LearningCatalogPage() {
           <input
             type="text"
             placeholder="Search catalog..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="h-14 w-full rounded-md border border-hairline-strong bg-canvas pl-12 pr-4 text-base outline-none focus:border-brand-green focus:ring-1 focus:ring-brand-green transition-all shadow-sm"
+            suppressHydrationWarning
           />
         </div>
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-2">
-        <button className="whitespace-nowrap px-4 py-2 rounded-full bg-ink text-on-dark text-sm font-medium">All Courses</button>
-        <button className="whitespace-nowrap px-4 py-2 rounded-full border border-hairline text-slate-600 hover:bg-surface-soft text-sm font-medium">In Progress</button>
-        <button className="whitespace-nowrap px-4 py-2 rounded-full border border-hairline text-slate-600 hover:bg-surface-soft text-sm font-medium">Completed</button>
+        <button className="whitespace-nowrap px-4 py-2 rounded-full bg-ink text-on-dark text-sm font-medium" suppressHydrationWarning>All Courses</button>
+        <button className="whitespace-nowrap px-4 py-2 rounded-full border border-hairline text-slate-600 hover:bg-surface-soft text-sm font-medium" suppressHydrationWarning>In Progress</button>
+        <button className="whitespace-nowrap px-4 py-2 rounded-full border border-hairline text-slate-600 hover:bg-surface-soft text-sm font-medium" suppressHydrationWarning>Completed</button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -64,7 +75,12 @@ export default function LearningCatalogPage() {
           <div className="col-span-full py-12 text-center text-slate-500">Loading courses...</div>
         ) : filteredCourses.length === 0 ? (
           <div className="col-span-full py-12 text-center text-slate-500">No courses found.</div>
-        ) : filteredCourses.map((course) => (
+        ) : filteredCourses.map((course) => {
+          const progress = course.progress_percent || 0;
+          const isStarted = progress > 0;
+          const isCompleted = progress >= 100;
+
+          return (
           <div key={course.id} className="bg-canvas rounded-lg border border-hairline overflow-hidden hover:shadow-subtle transition-shadow group flex flex-col">
             <div className="p-6 flex-1 flex flex-col">
               <div className="mb-4">
@@ -92,16 +108,26 @@ export default function LearningCatalogPage() {
               </div>
             </div>
             
+            {/* Progress Bar */}
+            {isStarted && (
+              <div className="w-full bg-slate-100 h-1.5">
+                <div 
+                  className="bg-brand-green h-1.5 transition-all duration-500" 
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            )}
+
             <div className="bg-surface-soft p-4 border-t border-hairline flex items-center justify-between">
-              <span className={`text-sm font-medium text-slate-500`}>
-                Not Started
+              <span className={`text-sm font-medium ${isCompleted ? 'text-brand-green-dark' : 'text-slate-500'}`}>
+                {isCompleted ? "Completed" : isStarted ? `${progress}% Complete` : "Not Started"}
               </span>
               <a href={`/learning/${course.id}`} className="flex items-center text-sm font-semibold text-brand-green-dark hover:underline group-hover:translate-x-1 transition-transform">
-                Get Started <ChevronRight className="ml-1 h-4 w-4" />
+                {isCompleted ? "Review" : isStarted ? "Resume" : "Get Started"} <ChevronRight className="ml-1 h-4 w-4" />
               </a>
             </div>
           </div>
-        ))}
+        )})}
       </div>
     </div>
   );

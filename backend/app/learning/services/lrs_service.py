@@ -5,6 +5,9 @@ from sqlalchemy import select
 from app.models.learning import XApiStatement
 import uuid
 import datetime
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from app.learning.standards.xapi.adapter import XApiAdapter
+from app.models.learning import LearningAttempt
 
 class LRSService(ABC):
     @abstractmethod
@@ -23,15 +26,14 @@ class NativeLRSService(LRSService):
 
     async def store_statement(self, statement: Dict[str, Any]) -> str:
         statement_id = statement.get("id", str(uuid.uuid4()))
+        statement["id"] = statement_id
         
-        # Check for duplicates
-        existing = await self.db.execute(
-            select(XApiStatement).where(XApiStatement.statement_id == statement_id)
-        )
+        # Check if statement already exists (Idempotency)
+        existing = await self.db.execute(select(XApiStatement).where(XApiStatement.statement_id == statement_id))
         if existing.scalars().first():
-            return statement_id # Idempotent
-
-        record = XApiStatement(
+            return statement_id
+            
+        stmt = XApiStatement(
             statement_id=statement_id,
             actor=statement.get("actor", {}),
             verb=statement.get("verb", {}),
@@ -44,7 +46,11 @@ class NativeLRSService(LRSService):
             version=statement.get("version", "1.0.0"),
             raw_statement=statement
         )
-        self.db.add(record)
+        self.db.add(stmt)
+        
+        # We do NOT call XApiAdapter here, because xapi.py already calls it,
+        # which avoids the TypeError (3 arguments given) and duplicate processing!
+        
         await self.db.commit()
         return statement_id
 

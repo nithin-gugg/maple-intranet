@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import Scorm12Player from "./Scorm12Player";
+import Scorm2004Player from "./Scorm2004Player";
+import XApiPlayer from "./XApiPlayer";
+import Cmi5Player from "./Cmi5Player";
 
 interface LearningPlayerProps {
   packageId: number;
@@ -11,25 +14,21 @@ interface LearningPlayerProps {
   userId: string;
 }
 
-export default function LearningPlayer({ packageId, entryPointUrl, standard, userId }: LearningPlayerProps) {
-  
+const LearningPlayer = ({ packageId, entryPointUrl, standard, userId }: LearningPlayerProps) => {
   if (standard === "SCORM_1_2") {
     return <Scorm12Player packageId={packageId} entryPointUrl={entryPointUrl} userId={userId} />;
   }
 
   if (standard === "SCORM_2004") {
-    // Return SCORM 2004 Player once implemented
-    return <div className="p-4 bg-yellow-50 text-yellow-800">SCORM 2004 Player (Coming Soon)</div>;
+    return <Scorm2004Player packageId={packageId} entryPointUrl={entryPointUrl} userId={userId} />;
   }
 
   if (standard === "XAPI") {
-    // Return xAPI Player once implemented
-    return <div className="p-4 bg-blue-50 text-blue-800">xAPI Player (Coming Soon)</div>;
+    return <XApiPlayer packageId={packageId} entryPointUrl={entryPointUrl} userId={userId} />;
   }
 
   if (standard === "CMI5") {
-    // Return cmi5 Player once implemented
-    return <div className="p-4 bg-purple-50 text-purple-800">cmi5 Player (Coming Soon)</div>;
+    return <Cmi5Player packageId={packageId} entryPointUrl={entryPointUrl} userId={userId} />;
   }
 
   return (
@@ -37,4 +36,6 @@ export default function LearningPlayer({ packageId, entryPointUrl, standard, use
       <p className="mt-4 text-sm text-slate-500 font-medium">Unsupported Package Standard: {standard}</p>
     </div>
   );
-}
+};
+
+export default React.memo(LearningPlayer);
