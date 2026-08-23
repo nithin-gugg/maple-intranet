@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, FileText, CheckCircle2, AlertCircle } from "lucide-react";
+import { Upload, FileText, CheckCircle2, AlertCircle, Layout, Archive } from "lucide-react";
 
 export default function NewCoursePage() {
   const router = useRouter();
   const [isUploading, setIsUploading] = useState(false);
+  const [courseType, setCourseType] = useState<"NATIVE" | "SCORM">("NATIVE");
   const [scormFile, setScormFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     title: "",
@@ -33,7 +34,7 @@ export default function NewCoursePage() {
       let scorm_package_id = null;
 
       // 1. Upload SCORM Package if provided
-      if (scormFile) {
+      if (courseType === "SCORM" && scormFile) {
         const scormData = new FormData();
         scormData.append("title", formData.title + " SCORM");
         scormData.append("file", scormFile);
@@ -62,15 +63,22 @@ export default function NewCoursePage() {
           title: formData.title,
           description: formData.description,
           category_id: formData.category_id,
-          learning_package_id: scorm_package_id
+          learning_package_id: scorm_package_id,
+          course_type: courseType
         }),
       });
 
       if (!courseRes.ok) {
         throw new Error("Failed to create course");
       }
+      
+      const createdCourse = await courseRes.json();
 
-      router.push("/learning");
+      if (courseType === "NATIVE") {
+        router.push(`/admin/courses/builder/${createdCourse.id}`);
+      } else {
+        router.push("/learning");
+      }
     } catch (error: any) {
       console.error(error);
       alert(`Error saving course: ${error.message}`);
@@ -83,14 +91,56 @@ export default function NewCoursePage() {
     <div className="max-w-3xl mx-auto space-y-8 pb-12">
       <div>
         <h1 className="text-display-md font-heading tracking-tight text-ink">Course Builder</h1>
-        <p className="mt-2 text-subtitle text-slate-500">Create a new learning module and optionally upload a SCORM 1.2 package.</p>
+        <p className="mt-2 text-subtitle text-slate-500">Create a new learning module.</p>
       </div>
 
       <div className="bg-canvas border border-hairline rounded-xl shadow-sm overflow-hidden">
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
           
-          {/* Basic Information */}
+          {/* Course Type Selection */}
           <div className="space-y-4">
+            <h3 className="text-heading-6 font-semibold text-ink border-b border-hairline pb-2">Course Type</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setCourseType("NATIVE")}
+                className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${
+                  courseType === "NATIVE"
+                    ? "border-brand-green bg-brand-green/5 ring-1 ring-brand-green"
+                    : "border-input bg-surface hover:bg-canvas"
+                }`}
+              >
+                <div className={`p-3 rounded-full ${courseType === "NATIVE" ? "bg-brand-green/10 text-brand-green" : "bg-slate-100 text-slate-500"}`}>
+                  <Layout className="w-6 h-6" />
+                </div>
+                <div className="text-center">
+                  <span className={`block font-medium ${courseType === "NATIVE" ? "text-brand-teal-deep" : "text-ink"}`}>Native LMS Course</span>
+                  <span className="text-xs text-slate-500 mt-1 block">Create content directly in the browser</span>
+                </div>
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setCourseType("SCORM")}
+                className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${
+                  courseType === "SCORM"
+                    ? "border-brand-green bg-brand-green/5 ring-1 ring-brand-green"
+                    : "border-input bg-surface hover:bg-canvas"
+                }`}
+              >
+                <div className={`p-3 rounded-full ${courseType === "SCORM" ? "bg-brand-green/10 text-brand-green" : "bg-slate-100 text-slate-500"}`}>
+                  <Archive className="w-6 h-6" />
+                </div>
+                <div className="text-center">
+                  <span className={`block font-medium ${courseType === "SCORM" ? "text-brand-teal-deep" : "text-ink"}`}>Upload SCORM Package</span>
+                  <span className="text-xs text-slate-500 mt-1 block">Import an existing SCORM 1.2 zip file</span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* Basic Information */}
+          <div className="space-y-4 pt-4">
             <h3 className="text-heading-6 font-semibold text-ink border-b border-hairline pb-2">Basic Information</h3>
             
             <div className="space-y-2">
@@ -124,51 +174,52 @@ export default function NewCoursePage() {
                 onChange={(e) => setFormData({...formData, category_id: parseInt(e.target.value)})}
                 className="w-full px-4 py-2 rounded-lg border border-input bg-surface focus:border-brand-green focus:ring-1 focus:ring-brand-green outline-none"
               />
-              <p className="text-xs text-slate-500">Enter a valid Category ID (e.g., 1 for Leadership, 2 for Technical).</p>
             </div>
           </div>
 
           {/* SCORM Upload Section */}
-          <div className="space-y-4 pt-4">
-            <h3 className="text-heading-6 font-semibold text-ink border-b border-hairline pb-2">Interactive Content (SCORM)</h3>
-            <p className="text-sm text-slate-500">Upload a SCORM 1.2 zip package. Our engine will securely extract and parse the manifest to identify the launch files.</p>
-            
-            <div className="border-2 border-dashed border-input rounded-xl p-8 text-center bg-surface hover:bg-canvas transition-colors">
-              <input 
-                type="file" 
-                id="scorm-upload" 
-                className="hidden" 
-                accept=".zip"
-                onChange={handleFileChange}
-              />
-              <label htmlFor="scorm-upload" className="cursor-pointer flex flex-col items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-brand-green/10 flex items-center justify-center text-brand-green">
-                  <Upload className="h-6 w-6" />
-                </div>
-                <div>
-                  <span className="font-semibold text-brand-teal-deep hover:text-brand-green transition-colors">Click to upload</span>
-                  <span className="text-slate-500 ml-1">or drag and drop</span>
-                </div>
-                <p className="text-xs text-slate-400">SCORM 1.2 .zip (Max 100MB)</p>
-              </label>
+          {courseType === "SCORM" && (
+            <div className="space-y-4 pt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+              <h3 className="text-heading-6 font-semibold text-ink border-b border-hairline pb-2">Interactive Content (SCORM)</h3>
+              <p className="text-sm text-slate-500">Upload a SCORM 1.2 zip package. Our engine will securely extract and parse the manifest to identify the launch files.</p>
               
-              {scormFile && (
-                <div className="mt-6 flex items-center gap-3 p-3 bg-brand-teal/5 border border-brand-teal/20 rounded-lg text-left">
-                  <FileText className="h-5 w-5 text-brand-teal" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-brand-teal-deep truncate">{scormFile.name}</p>
-                    <p className="text-xs text-slate-500">{(scormFile.size / 1024 / 1024).toFixed(2)} MB</p>
+              <div className="border-2 border-dashed border-input rounded-xl p-8 text-center bg-surface hover:bg-canvas transition-colors">
+                <input 
+                  type="file" 
+                  id="scorm-upload" 
+                  className="hidden" 
+                  accept=".zip"
+                  onChange={handleFileChange}
+                />
+                <label htmlFor="scorm-upload" className="cursor-pointer flex flex-col items-center gap-3">
+                  <div className="h-12 w-12 rounded-full bg-brand-green/10 flex items-center justify-center text-brand-green">
+                    <Upload className="h-6 w-6" />
                   </div>
-                  <CheckCircle2 className="h-5 w-5 text-brand-green" />
-                </div>
-              )}
+                  <div>
+                    <span className="font-semibold text-brand-teal-deep hover:text-brand-green transition-colors">Click to upload</span>
+                    <span className="text-slate-500 ml-1">or drag and drop</span>
+                  </div>
+                  <p className="text-xs text-slate-400">SCORM 1.2 .zip (Max 100MB)</p>
+                </label>
+                
+                {scormFile && (
+                  <div className="mt-6 flex items-center gap-3 p-3 bg-brand-teal/5 border border-brand-teal/20 rounded-lg text-left">
+                    <FileText className="h-5 w-5 text-brand-teal" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-brand-teal-deep truncate">{scormFile.name}</p>
+                      <p className="text-xs text-slate-500">{(scormFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                    </div>
+                    <CheckCircle2 className="h-5 w-5 text-brand-green" />
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex items-start gap-3 p-4 bg-accent-orange/10 border border-accent-orange/20 rounded-lg text-accent-orange-dark">
+                <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                <p className="text-sm"><strong>Security Notice:</strong> Uploaded packages are scanned for path traversal attempts and sandboxed upon extraction.</p>
+              </div>
             </div>
-            
-            <div className="flex items-start gap-3 p-4 bg-accent-orange/10 border border-accent-orange/20 rounded-lg text-accent-orange-dark">
-              <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
-              <p className="text-sm"><strong>Security Notice:</strong> Uploaded packages are scanned for path traversal attempts and sandboxed upon extraction.</p>
-            </div>
-          </div>
+          )}
 
           <div className="pt-6 border-t border-hairline flex justify-end gap-4">
             <button 
@@ -180,7 +231,7 @@ export default function NewCoursePage() {
             </button>
             <button 
               type="submit" 
-              disabled={isUploading || !formData.title}
+              disabled={isUploading || !formData.title || (courseType === "SCORM" && !scormFile)}
               className="px-6 py-2 rounded-lg text-sm font-medium bg-brand-teal-deep text-white hover:bg-brand-teal shadow-md disabled:opacity-50 transition-all flex items-center gap-2"
             >
               {isUploading ? (
@@ -189,7 +240,7 @@ export default function NewCoursePage() {
                   Processing...
                 </>
               ) : (
-                'Save & Publish'
+                courseType === "NATIVE" ? 'Create Native Course' : 'Save & Publish'
               )}
             </button>
           </div>

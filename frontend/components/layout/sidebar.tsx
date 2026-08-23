@@ -104,6 +104,7 @@ export function Sidebar() {
             <div className="space-y-1">
               {[
                 { name: "Admin Dashboard", href: "/admin/analytics", icon: LayoutDashboard },
+                { name: "Users & Assignments", href: "/admin/users", icon: Users },
                 { name: "Manage Documents", href: "/admin/documents", icon: Files },
                 { name: "Manage Courses", href: "/admin/courses", icon: GraduationCap },
               ].map((item) => {

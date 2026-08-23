@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { PlayCircle, Clock, Search, ChevronRight } from "lucide-react";
+import { PlayCircle, Clock, Search, ChevronRight, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
 
 export default function LearningCatalogPage() {
@@ -38,9 +38,19 @@ export default function LearningCatalogPage() {
     }
   }, [userId]);
 
-  const filteredCourses = courses.filter(c => 
-    c.title?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const [filter, setFilter] = useState("all");
+
+  const filteredCourses = courses.filter(c => {
+    const matchesSearch = c.title?.toLowerCase().includes(searchQuery.toLowerCase());
+    if (!matchesSearch) return false;
+    
+    const status = c.status?.toLowerCase();
+    if (filter === "completed" && status !== "completed") return false;
+    if (filter === "in_progress" && status !== "in_progress" && status !== "incomplete" && (c.progress_percent > 0 && c.progress_percent < 100)) return false;
+    if (filter === "in_progress" && c.progress_percent === 0) return false;
+    if (filter === "in_progress" && status === "completed") return false;
+    return true;
+  });
 
   return (
     <div className="space-y-8">
@@ -65,9 +75,24 @@ export default function LearningCatalogPage() {
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-2">
-        <button className="whitespace-nowrap px-4 py-2 rounded-full bg-ink text-on-dark text-sm font-medium" suppressHydrationWarning>All Courses</button>
-        <button className="whitespace-nowrap px-4 py-2 rounded-full border border-hairline text-slate-600 hover:bg-surface-soft text-sm font-medium" suppressHydrationWarning>In Progress</button>
-        <button className="whitespace-nowrap px-4 py-2 rounded-full border border-hairline text-slate-600 hover:bg-surface-soft text-sm font-medium" suppressHydrationWarning>Completed</button>
+        <button 
+          className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium ${filter === "all" ? "bg-ink text-on-dark" : "border border-hairline text-slate-600 hover:bg-surface-soft"}`} 
+          onClick={() => setFilter("all")}
+        >
+          All Courses
+        </button>
+        <button 
+          className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium ${filter === "in_progress" ? "bg-ink text-on-dark" : "border border-hairline text-slate-600 hover:bg-surface-soft"}`} 
+          onClick={() => setFilter("in_progress")}
+        >
+          In Progress
+        </button>
+        <button 
+          className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium ${filter === "completed" ? "bg-ink text-on-dark" : "border border-hairline text-slate-600 hover:bg-surface-soft"}`} 
+          onClick={() => setFilter("completed")}
+        >
+          Completed
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -118,13 +143,45 @@ export default function LearningCatalogPage() {
               </div>
             )}
 
-            <div className="bg-surface-soft p-4 border-t border-hairline flex items-center justify-between">
-              <span className={`text-sm font-medium ${isCompleted ? 'text-brand-green-dark' : 'text-slate-500'}`}>
-                {isCompleted ? "Completed" : isStarted ? `${progress}% Complete` : "Not Started"}
-              </span>
-              <a href={`/learning/${course.id}`} className="flex items-center text-sm font-semibold text-brand-green-dark hover:underline group-hover:translate-x-1 transition-transform">
-                {isCompleted ? "Review" : isStarted ? "Resume" : "Get Started"} <ChevronRight className="ml-1 h-4 w-4" />
-              </a>
+            <div className="bg-surface-soft p-4 border-t border-hairline flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className={`text-sm font-medium ${isCompleted ? 'text-brand-green-dark flex items-center gap-1' : 'text-slate-500'}`}>
+                  {isCompleted ? <><CheckCircle2 className="w-4 h-4" /> Completed</> : isStarted ? `${progress}% Complete` : "Not Started"}
+                </span>
+                
+                {!isCompleted && (
+                  <a href={`/learning/${course.id}`} className="flex items-center text-sm font-semibold text-brand-green-dark hover:underline group-hover:translate-x-1 transition-transform">
+                    {isStarted ? "Resume" : "Get Started"} <ChevronRight className="ml-1 h-4 w-4" />
+                  </a>
+                )}
+              </div>
+              
+              {isCompleted && (
+                <div className="flex items-center gap-2 pt-2 border-t border-hairline">
+                  <a 
+                    href={`/learning/${course.id}?mode=review`} 
+                    className="flex-1 flex justify-center items-center py-2 bg-canvas border border-input rounded-md text-sm font-medium text-slate-700 hover:bg-surface transition-colors"
+                  >
+                    Review
+                  </a>
+                  <button 
+                    onClick={() => {
+                      if(confirm("Are you sure you want to restart this course? A new attempt will be created.")) {
+                        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/learning/courses/${course.id}/restart`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ user_id: userId })
+                        }).then(() => {
+                          window.location.href = `/learning/${course.id}`;
+                        });
+                      }
+                    }}
+                    className="flex-1 flex justify-center items-center py-2 bg-brand-green text-white rounded-md text-sm font-medium hover:bg-brand-teal-deep transition-colors"
+                  >
+                    Restart
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )})}

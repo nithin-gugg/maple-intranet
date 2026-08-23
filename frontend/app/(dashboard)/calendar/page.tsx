@@ -27,7 +27,7 @@ export default function CalendarPage() {
       if (!user) return;
       const token = await getToken();
       setUserToken(token);
-      try {
+         try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
         const res = await fetch(`${apiUrl}/api/v1/auth/google/status?user_id=${user.id}`, {
           headers: {

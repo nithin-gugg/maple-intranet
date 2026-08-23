@@ -23,6 +23,7 @@ class Course(Base):
     category_id: Mapped[int] = mapped_column(ForeignKey("course_categories.id"))
     created_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
     is_published: Mapped[bool] = mapped_column(Boolean, default=False)
+    course_type: Mapped[str] = mapped_column(String(50), default="SCORM")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     
     category: Mapped["CourseCategory"] = relationship(back_populates="courses")
@@ -40,6 +41,7 @@ class CourseModule(Base):
     
     course: Mapped["Course"] = relationship(back_populates="modules")
     learning_package = relationship("LearningPackage")
+    lessons: Mapped[List["CourseLesson"]] = relationship(back_populates="module", cascade="all, delete-orphan")
 
 class CourseEnrollment(Base):
     __tablename__ = "course_enrollments"
@@ -50,6 +52,9 @@ class CourseEnrollment(Base):
     progress_percent: Mapped[int] = mapped_column(default=0)
     enrolled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    assigned_by: Mapped[Optional[str]] = mapped_column(String(255))
+    due_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     
     course: Mapped["Course"] = relationship(back_populates="enrollments")
 
@@ -80,9 +85,9 @@ class LearningAttempt(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     course_id: Mapped[Optional[int]] = mapped_column(ForeignKey("courses.id", ondelete="CASCADE"), index=True)
-    package_id: Mapped[int] = mapped_column(ForeignKey("learning_packages.id", ondelete="CASCADE"), index=True)
+    package_id: Mapped[Optional[int]] = mapped_column(ForeignKey("learning_packages.id", ondelete="CASCADE"), index=True)
     attempt_number: Mapped[int] = mapped_column(default=1)
-    standard: Mapped[str] = mapped_column(String(50)) # scorm_1_2, scorm_2004, cmi5, xapi
+    standard: Mapped[Optional[str]] = mapped_column(String(50)) # scorm_1_2, scorm_2004, cmi5, xapi, native
     status: Mapped[str] = mapped_column(String(50), default="not attempted") # incomplete, completed, passed, failed, browsed
     score: Mapped[Optional[float]] = mapped_column()
     progress_percent: Mapped[Optional[int]] = mapped_column(default=0)
@@ -90,14 +95,17 @@ class LearningAttempt(Base):
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     last_activity_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    
+    course: Mapped[Optional["Course"]] = relationship()
 
 class LearningActivityEvent(Base):
     __tablename__ = "learning_activity_events"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     course_id: Mapped[Optional[int]] = mapped_column(ForeignKey("courses.id", ondelete="CASCADE"), index=True)
-    package_id: Mapped[int] = mapped_column(ForeignKey("learning_packages.id", ondelete="CASCADE"), index=True)
-    attempt_id: Mapped[int] = mapped_column(ForeignKey("learning_attempts.id", ondelete="CASCADE"), index=True)
+    package_id: Mapped[Optional[int]] = mapped_column(ForeignKey("learning_packages.id", ondelete="CASCADE"), index=True)
+    attempt_id: Mapped[Optional[int]] = mapped_column(ForeignKey("learning_attempts.id", ondelete="CASCADE"), index=True)
+    standard: Mapped[Optional[str]] = mapped_column(String(50)) # scorm_1_2, scorm_2004, cmi5, xapi, native
     activity_id: Mapped[Optional[str]] = mapped_column(String(255), index=True)
     
     event_type: Mapped[str] = mapped_column(String(50), index=True) # initialized, progress, completed, etc.
@@ -227,3 +235,122 @@ class XApiProfile(Base):
     profile_id: Mapped[str] = mapped_column(String(255), index=True)
     profile_data: Mapped[dict] = mapped_column(JSON)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+# =====================================================================
+# Native LMS Course Authoring Models
+# =====================================================================
+
+class CourseLesson(Base):
+    __tablename__ = "course_lessons"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    module_id: Mapped[int] = mapped_column(ForeignKey("course_modules.id", ondelete="CASCADE"), index=True)
+    title: Mapped[str] = mapped_column(String(255))
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    sort_order: Mapped[int] = mapped_column(default=0)
+    completion_type: Mapped[str] = mapped_column(String(50), default="MANUAL") # MANUAL, AUTO, QUIZ
+    is_required: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    module: Mapped["CourseModule"] = relationship(back_populates="lessons")
+    content_blocks: Mapped[List["LessonContentBlock"]] = relationship(back_populates="lesson", cascade="all, delete-orphan")
+    quizzes: Mapped[List["Quiz"]] = relationship(back_populates="lesson", cascade="all, delete-orphan")
+    resources: Mapped[List["CourseResource"]] = relationship(back_populates="lesson", cascade="all, delete-orphan")
+
+class LessonContentBlock(Base):
+    __tablename__ = "lesson_content_blocks"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    lesson_id: Mapped[int] = mapped_column(ForeignKey("course_lessons.id", ondelete="CASCADE"), index=True)
+    type: Mapped[str] = mapped_column(String(50)) # TEXT, VIDEO, IMAGE, EMBED, RESOURCE, QUIZ
+    content: Mapped[Optional[str]] = mapped_column(Text)
+    sort_order: Mapped[int] = mapped_column(default=0)
+    metadata_json: Mapped[dict] = mapped_column(JSON, default=dict) # For storing video URLs, embed providers, etc.
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    lesson: Mapped["CourseLesson"] = relationship(back_populates="content_blocks")
+
+class Quiz(Base):
+    __tablename__ = "quizzes"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    lesson_id: Mapped[int] = mapped_column(ForeignKey("course_lessons.id", ondelete="CASCADE"), index=True)
+    title: Mapped[str] = mapped_column(String(255))
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    passing_score: Mapped[int] = mapped_column(default=80)
+    max_attempts: Mapped[Optional[int]] = mapped_column() # Null means unlimited
+    show_answers: Mapped[bool] = mapped_column(Boolean, default=True)
+    randomize_questions: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    lesson: Mapped["CourseLesson"] = relationship(back_populates="quizzes")
+    questions: Mapped[List["QuizQuestion"]] = relationship(back_populates="quiz", cascade="all, delete-orphan")
+    attempts: Mapped[List["QuizAttempt"]] = relationship(back_populates="quiz", cascade="all, delete-orphan")
+
+class QuizQuestion(Base):
+    __tablename__ = "quiz_questions"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    quiz_id: Mapped[int] = mapped_column(ForeignKey("quizzes.id", ondelete="CASCADE"), index=True)
+    question_type: Mapped[str] = mapped_column(String(50), default="MULTIPLE_CHOICE")
+    question: Mapped[str] = mapped_column(Text)
+    explanation: Mapped[Optional[str]] = mapped_column(Text)
+    points: Mapped[int] = mapped_column(default=10)
+    sort_order: Mapped[int] = mapped_column(default=0)
+    
+    quiz: Mapped["Quiz"] = relationship(back_populates="questions")
+    options: Mapped[List["QuizOption"]] = relationship(back_populates="question", cascade="all, delete-orphan")
+
+class QuizOption(Base):
+    __tablename__ = "quiz_options"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    question_id: Mapped[int] = mapped_column(ForeignKey("quiz_questions.id", ondelete="CASCADE"), index=True)
+    option_text: Mapped[str] = mapped_column(Text)
+    is_correct: Mapped[bool] = mapped_column(Boolean, default=False)
+    sort_order: Mapped[int] = mapped_column(default=0)
+    
+    question: Mapped["QuizQuestion"] = relationship(back_populates="options")
+
+class CourseResource(Base):
+    __tablename__ = "course_resources"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    course_id: Mapped[Optional[int]] = mapped_column(ForeignKey("courses.id", ondelete="CASCADE"), index=True)
+    module_id: Mapped[Optional[int]] = mapped_column(ForeignKey("course_modules.id", ondelete="CASCADE"), index=True)
+    lesson_id: Mapped[Optional[int]] = mapped_column(ForeignKey("course_lessons.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(255))
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    resource_type: Mapped[str] = mapped_column(String(50)) # PDF, DOCX, URL
+    file_url: Mapped[Optional[str]] = mapped_column(String(1024))
+    external_url: Mapped[Optional[str]] = mapped_column(String(1024))
+    file_size: Mapped[Optional[int]] = mapped_column()
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    
+    lesson: Mapped["CourseLesson"] = relationship(back_populates="resources")
+
+class LessonProgress(Base):
+    __tablename__ = "lesson_progress"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    course_id: Mapped[int] = mapped_column(ForeignKey("courses.id", ondelete="CASCADE"), index=True)
+    lesson_id: Mapped[int] = mapped_column(ForeignKey("course_lessons.id", ondelete="CASCADE"), index=True)
+    attempt_id: Mapped[Optional[int]] = mapped_column(ForeignKey("learning_attempts.id", ondelete="CASCADE"), index=True)
+    status: Mapped[str] = mapped_column(String(50), default="NOT_STARTED") # NOT_STARTED, IN_PROGRESS, COMPLETED
+    progress_percentage: Mapped[int] = mapped_column(default=0)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    last_accessed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+class QuizAttempt(Base):
+    __tablename__ = "quiz_attempts"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    quiz_id: Mapped[int] = mapped_column(ForeignKey("quizzes.id", ondelete="CASCADE"), index=True)
+    course_id: Mapped[int] = mapped_column(ForeignKey("courses.id", ondelete="CASCADE"), index=True)
+    attempt_id: Mapped[Optional[int]] = mapped_column(ForeignKey("learning_attempts.id", ondelete="CASCADE"), index=True)
+    score: Mapped[float] = mapped_column(default=0)
+    percentage: Mapped[int] = mapped_column(default=0)
+    passed: Mapped[bool] = mapped_column(Boolean, default=False)
+    attempt_number: Mapped[int] = mapped_column(default=1)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    
+    quiz: Mapped["Quiz"] = relationship(back_populates="attempts")

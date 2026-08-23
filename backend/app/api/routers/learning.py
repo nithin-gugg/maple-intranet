@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from app.core.database import get_db
-from app.models.learning import Course, CourseCategory
+from app.models.learning import Course, CourseCategory, CourseModule, LearningAttempt, CourseEnrollment, LearningPackage
 from app.api.deps import get_current_user
 
 router = APIRouter()
@@ -39,6 +39,7 @@ async def get_courses(
             "title": c.title,
             "description": c.description,
             "category": {"id": c.category.id, "name": c.category.name} if c.category else None,
+            "course_type": c.course_type,
             "progress_percent": 0,
             "status": "not attempted"
         }
@@ -66,7 +67,7 @@ async def get_course(
     user_id: str | None = None,
     db: AsyncSession = Depends(get_db),
 ):
-    from app.models.learning import CourseModule
+
     result = await db.execute(
         select(Course)
         .options(
@@ -86,6 +87,7 @@ async def get_course(
         "title": course.title,
         "description": course.description,
         "category": {"id": course.category.id, "name": course.category.name} if course.category else None,
+        "course_type": course.course_type,
         "modules": [
             {
                 "id": m.id,
@@ -104,7 +106,7 @@ async def get_course(
     }
     
     if user_id:
-        from app.models.learning import LearningAttempt
+
         attempt_query = select(LearningAttempt).where(
             LearningAttempt.user_id == user_id,
             LearningAttempt.course_id == course_id
@@ -129,7 +131,6 @@ async def mark_course_complete(
     req: MarkCompleteRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    from app.models.learning import LearningAttempt
     import datetime
     
     attempt_query = select(LearningAttempt).where(
@@ -160,20 +161,21 @@ class CourseCreate(BaseModel):
     description: str | None = None
     category_id: int
     learning_package_id: int | None = None
+    course_type: str = "SCORM"
 
 @router.post("/courses", response_model=None)
 async def create_course(
     course_in: CourseCreate,
     db: AsyncSession = Depends(get_db),
 ):
-    from app.models.learning import CourseModule
     
     course = Course(
         title=course_in.title,
         description=course_in.description,
         category_id=course_in.category_id,
         created_by="temp_admin_user", # Mock user
-        is_published=True
+        is_published=True,
+        course_type=course_in.course_type
     )
     db.add(course)
     await db.flush() # To get course.id
@@ -213,7 +215,6 @@ async def delete_course(
 async def get_course_completions(
     db: AsyncSession = Depends(get_db)
 ):
-    from app.models.learning import LearningAttempt
     
     # Simple query to get all courses and their attempts
     query = (
@@ -244,4 +245,68 @@ async def get_course_completions(
         })
         
     return analytics
+
+@router.post("/courses/{course_id}/restart", response_model=None)
+async def restart_course(
+    course_id: int,
+    req: MarkCompleteRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    import datetime
+    
+    # Get course
+    course_res = await db.execute(select(Course).options(selectinload(Course.modules)).where(Course.id == course_id))
+    course = course_res.scalars().first()
+    if not course:
+        from fastapi import HTTPException
+        raise HTTPException(404, "Course not found")
+        
+    # Get highest attempt
+    attempts_query = select(LearningAttempt).where(
+        LearningAttempt.user_id == req.user_id, 
+        LearningAttempt.course_id == course_id
+    ).order_by(LearningAttempt.attempt_number.desc())
+    
+    attempts_res = await db.execute(attempts_query)
+    last_attempt = attempts_res.scalars().first()
+    
+    new_attempt_num = (last_attempt.attempt_number + 1) if last_attempt else 1
+    
+    # Check if SCORM or Native
+    package_id = None
+    standard = None
+    
+    if course.course_type == "SCORM":
+        if course.modules and course.modules[0].learning_package_id:
+            package_id = course.modules[0].learning_package_id
+            package_res = await db.execute(select(LearningPackage).where(LearningPackage.id == package_id))
+            pkg = package_res.scalars().first()
+            if pkg:
+                standard = pkg.standard
+                
+    new_attempt = LearningAttempt(
+        user_id=req.user_id,
+        course_id=course_id,
+        package_id=package_id,
+        standard=standard,
+        attempt_number=new_attempt_num,
+        status="not attempted",
+        progress_percent=0
+    )
+    db.add(new_attempt)
+    
+    # Set course enrollment status to IN_PROGRESS
+    enrollment_res = await db.execute(select(CourseEnrollment).where(
+        CourseEnrollment.user_id == req.user_id,
+        CourseEnrollment.course_id == course_id,
+        CourseEnrollment.is_active == True
+    ))
+    enrollment = enrollment_res.scalars().first()
+    if enrollment:
+        enrollment.status = "IN_PROGRESS"
+        enrollment.progress_percent = 0
+        
+    await db.commit()
+    await db.refresh(new_attempt)
+    return {"message": "Course restarted successfully", "attempt_id": new_attempt.id}
 

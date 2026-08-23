@@ -75,14 +75,14 @@ const DEFAULT_DOCK_ITEMS: DockNavItem[] = [
     alt: "Loom app icon",
   },
   {
-    label: "Trello",
+    label: "Courses",
     iconSrc: "/5.webp",
-    alt: "Trello app icon",
+    alt: "Courses app icon",
   },
   {
-    label: "Confluence",
+    label: "Trello",
     iconSrc: "/6.webp",
-    alt: "Confluence app icon",
+    alt: "Trello app icon",
   },
   {
     label: "Calendar",
@@ -320,7 +320,7 @@ export function LandingPage({ isPublic = false, isLoggedIn = false }: { isPublic
               your team with essential resources, company news, and seamless communication tools 
               to foster a culture of continuous growth and collaboration.
             </p>
-            <button className="bg-brand-green text-black px-8 py-3 rounded-full font-semibold hover:bg-white hover:text-black transition-all duration-300 shadow-lg shadow-brand-green/20">
+            <button suppressHydrationWarning className="bg-brand-green text-black px-8 py-3 rounded-full font-semibold hover:bg-white hover:text-black transition-all duration-300 shadow-lg shadow-brand-green/20">
               Know More
             </button>
           </div>
