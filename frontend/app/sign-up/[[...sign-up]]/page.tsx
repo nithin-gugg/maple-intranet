@@ -9,7 +9,7 @@ export default function SignUpPage() {
       </div>
       
       <div className="relative z-10">
-        <SignUp />
+        <SignUp fallbackRedirectUrl="/dashboard" />
       </div>
     </div>
   );

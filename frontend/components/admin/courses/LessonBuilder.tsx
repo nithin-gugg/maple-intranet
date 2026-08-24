@@ -125,24 +125,24 @@ export default function LessonBuilder({ lesson, onUpdate }: { lesson: any, onUpd
           </button>
           
           {addingBlockType === 'menu' && (
-            <div className="absolute right-0 mt-2 w-56 bg-surface border border-hairline rounded-xl shadow-lg p-2 z-10 flex flex-col gap-1">
-              <button onClick={() => addBlock("TEXT")} className="flex items-center gap-3 px-3 py-2 hover:bg-canvas rounded-lg text-sm text-left">
+            <div className="absolute right-0 mt-2 w-56 bg-white border border-hairline rounded-xl shadow-lg p-2 z-50 flex flex-col gap-1">
+              <button onClick={() => addBlock("TEXT")} className="flex items-center gap-3 px-3 py-2 hover:bg-brand-green rounded-lg text-sm text-left hover:cursor-pointer">
                 <div className="p-1.5 bg-blue-100 text-blue-600 rounded-md"><Type className="w-4 h-4" /></div>
                 <div><div className="font-medium">Rich Text</div><div className="text-xs text-slate-500">Add formatted text</div></div>
               </button>
-              <button onClick={() => addBlock("VIDEO")} className="flex items-center gap-3 px-3 py-2 hover:bg-canvas rounded-lg text-sm text-left">
+              <button onClick={() => addBlock("VIDEO")} className="flex items-center gap-3 px-3 py-2 hover:bg-brand-green rounded-lg text-sm text-left hover:cursor-pointer">
                 <div className="p-1.5 bg-red-100 text-red-600 rounded-md"><Video className="w-4 h-4" /></div>
                 <div><div className="font-medium">Video</div><div className="text-xs text-slate-500">YouTube or Vimeo</div></div>
               </button>
-              <button onClick={() => addBlock("IMAGE")} className="flex items-center gap-3 px-3 py-2 hover:bg-canvas rounded-lg text-sm text-left">
+              <button onClick={() => addBlock("IMAGE")} className="flex items-center gap-3 px-3 py-2 hover:bg-brand-green rounded-lg text-sm text-left hover:cursor-pointer">
                 <div className="p-1.5 bg-purple-100 text-purple-600 rounded-md"><ImageIcon className="w-4 h-4" /></div>
                 <div><div className="font-medium">Image</div><div className="text-xs text-slate-500">Upload an image</div></div>
               </button>
-              <button onClick={() => addBlock("EMBED")} className="flex items-center gap-3 px-3 py-2 hover:bg-canvas rounded-lg text-sm text-left">
+              <button onClick={() => addBlock("EMBED")} className="flex items-center gap-3 px-3 py-2 hover:bg-brand-green rounded-lg text-sm text-left hover:cursor-pointer">
                 <div className="p-1.5 bg-orange-100 text-orange-600 rounded-md"><LinkIcon className="w-4 h-4" /></div>
                 <div><div className="font-medium">Embed</div><div className="text-xs text-slate-500">Embed a URL</div></div>
               </button>
-              <button onClick={() => addBlock("QUIZ")} className="flex items-center gap-3 px-3 py-2 hover:bg-canvas rounded-lg text-sm text-left">
+              <button onClick={() => addBlock("QUIZ")} className="flex items-center gap-3 px-3 py-2 hover:bg-brand-green rounded-lg text-sm text-left hover:cursor-pointer">
                 <div className="p-1.5 bg-green-100 text-green-600 rounded-md"><HelpCircle className="w-4 h-4" /></div>
                 <div><div className="font-medium">Quiz</div><div className="text-xs text-slate-500">Add a quick quiz</div></div>
               </button>

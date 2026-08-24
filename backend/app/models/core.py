@@ -65,6 +65,7 @@ class Employee(Base):
     employee_id: Mapped[Optional[str]] = mapped_column(String(100), unique=True, index=True)
     date_of_birth: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     onboarding_completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    onboarding_completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     onboarding_step: Mapped[int] = mapped_column(default=1)
     designation: Mapped[str] = mapped_column(String(100))
     phone: Mapped[Optional[str]] = mapped_column(String(20))

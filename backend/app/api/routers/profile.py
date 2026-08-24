@@ -148,6 +148,10 @@ async def complete_onboarding(
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
+    from app.core.config import settings
+    import httpx
+    import datetime
+    
     result_emp = await db.execute(select(Employee).where(Employee.id == user_id))
     employee = result_emp.scalars().first()
     
@@ -155,6 +159,23 @@ async def complete_onboarding(
         raise HTTPException(status_code=404, detail="Employee not found")
         
     employee.onboarding_completed = True
+    employee.onboarding_completed_at = datetime.datetime.utcnow()
     await db.commit()
     
+    # Update Clerk Metadata
+    if settings.CLERK_SECRET_KEY:
+        async with httpx.AsyncClient() as client:
+            try:
+                res = await client.patch(
+                    f"https://api.clerk.com/v1/users/{user_id}/metadata",
+                    headers={
+                        "Authorization": f"Bearer {settings.CLERK_SECRET_KEY}",
+                        "Content-Type": "application/json"
+                    },
+                    json={"public_metadata": {"onboarding_completed": True}}
+                )
+                res.raise_for_status()
+            except Exception as e:
+                print(f"Error updating Clerk metadata: {e}")
+                
     return {"status": "success"}

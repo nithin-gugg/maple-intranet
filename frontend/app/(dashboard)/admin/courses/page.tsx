@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Plus, Trash2, GraduationCap, Loader2 } from "lucide-react";
+import { Plus, Trash2, GraduationCap, Loader2, Edit2 } from "lucide-react";
 
 export default function AdminCoursesPage() {
   const [courses, setCourses] = useState<any[]>([]);
@@ -32,6 +32,22 @@ export default function AdminCoursesPage() {
     } catch (err) {
       console.error(err);
       alert("Failed to delete course");
+    }
+  };
+
+  const handleEdit = async (id: number, currentTitle: string) => {
+    const newTitle = prompt("Edit Course Title:", currentTitle);
+    if (!newTitle || newTitle === currentTitle) return;
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/learning/courses/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newTitle })
+      });
+      fetchCourses();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update course title");
     }
   };
 
@@ -91,6 +107,13 @@ export default function AdminCoursesPage() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
+                      <button 
+                        onClick={() => handleEdit(course.id, course.title)}
+                        className="p-2 text-slate-400 hover:text-brand-green hover:bg-brand-green/10 rounded-md transition-colors"
+                        title="Edit Title"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </button>
                       <button 
                         onClick={() => handleDelete(course.id)}
                         className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"

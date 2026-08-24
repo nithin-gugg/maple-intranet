@@ -16,13 +16,13 @@ export default function OnboardingComplete() {
         Your Maple profile is ready. Welcome to the Maple Intranet.
       </p>
       
-      <Link 
+      <a 
         href="/dashboard"
         className="inline-flex items-center justify-center px-8 py-3 bg-brand-teal-deep text-white font-medium rounded-lg hover:bg-brand-teal transition-colors shadow-sm"
       >
         Go to Dashboard
         <ArrowRight className="ml-2 h-5 w-5" />
-      </Link>
+      </a>
     </div>
   );
 }

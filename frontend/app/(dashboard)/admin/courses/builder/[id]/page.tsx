@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Plus, GripVertical, FileText, Layout, PlaySquare, Settings, ArrowLeft } from "lucide-react";
+import { Plus, GripVertical, FileText, Layout, PlaySquare, Settings, ArrowLeft, Loader2, Edit2 } from "lucide-react";
 import Link from "next/link";
 import LessonBuilder from "@/components/admin/courses/LessonBuilder";
 
@@ -44,6 +44,8 @@ export default function CourseBuilderPage() {
   const [course, setCourse] = useState<CourseHierarchy | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null);
+  const [isAddingModule, setIsAddingModule] = useState(false);
+  const [addingLessonToModuleId, setAddingLessonToModuleId] = useState<number | null>(null);
   
   const fetchCourse = async () => {
     try {
@@ -69,6 +71,7 @@ export default function CourseBuilderPage() {
   const handleAddModule = async () => {
     const title = prompt("Enter Module Title:");
     if (!title) return;
+    setIsAddingModule(true);
     try {
       await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/native-courses/courses/${courseId}/modules`, {
         method: "POST",
@@ -78,17 +81,37 @@ export default function CourseBuilderPage() {
       fetchCourse();
     } catch (e) {
       console.error(e);
+    } finally {
+      setIsAddingModule(false);
     }
   };
 
   const handleAddLesson = async (moduleId: number, currentLessonsCount: number) => {
     const title = prompt("Enter Lesson Title:");
     if (!title) return;
+    setAddingLessonToModuleId(moduleId);
     try {
       await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/native-courses/modules/${moduleId}/lessons`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, sort_order: currentLessonsCount, completion_type: "MANUAL", is_required: true })
+      });
+      fetchCourse();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setAddingLessonToModuleId(null);
+    }
+  };
+
+  const handleEditModule = async (moduleId: number, currentTitle: string, currentOrder: number) => {
+    const newTitle = prompt("Edit Module Title:", currentTitle);
+    if (!newTitle || newTitle === currentTitle) return;
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/native-courses/modules/${moduleId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newTitle, order: currentOrder })
       });
       fetchCourse();
     } catch (e) {
@@ -151,8 +174,8 @@ export default function CourseBuilderPage() {
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-ink uppercase tracking-wider">Curriculum</h3>
-            <button onClick={handleAddModule} className="p-1 text-slate-400 hover:text-brand-green hover:bg-brand-green/10 rounded">
-              <Plus className="w-4 h-4" />
+            <button onClick={handleAddModule} disabled={isAddingModule} className="p-1 text-slate-400 hover:text-brand-green hover:bg-brand-green/10 rounded">
+              {isAddingModule ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
             </button>
           </div>
           
@@ -163,9 +186,12 @@ export default function CourseBuilderPage() {
                   <div className="flex items-center gap-2 text-sm font-medium text-ink">
                     <GripVertical className="w-4 h-4 text-slate-300 opacity-0 group-hover:opacity-100 cursor-grab" />
                     <span>Module {mIdx + 1}: {module.title}</span>
+                    <button onClick={() => handleEditModule(module.id, module.title, module.order)} className="p-1 text-slate-400 hover:text-brand-green opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                  <button onClick={() => handleAddLesson(module.id, module.lessons.length)} className="p-1 text-slate-400 hover:text-brand-green opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Plus className="w-4 h-4" />
+                  <button onClick={() => handleAddLesson(module.id, module.lessons.length)} disabled={addingLessonToModuleId === module.id} className="p-1 text-slate-400 hover:text-brand-green opacity-0 group-hover:opacity-100 transition-opacity">
+                    {addingLessonToModuleId === module.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                   </button>
                 </div>
                 

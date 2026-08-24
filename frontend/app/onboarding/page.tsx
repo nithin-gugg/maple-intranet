@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import OnboardingLayout from "@/components/onboarding/OnboardingLayout";
@@ -26,6 +26,7 @@ export type OnboardingData = {
 
 export default function OnboardingPage() {
   const { getToken, isLoaded, isSignedIn } = useAuth();
+  const { user } = useUser();
   const router = useRouter();
   
   const [currentStep, setCurrentStep] = useState<number>(0); // 0 means loading/init
@@ -127,6 +128,9 @@ export default function OnboardingPage() {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` }
       });
+      if (user) {
+        await user.reload();
+      }
       setCurrentStep(7); // Show success screen
     } catch (e) {
       console.error("Failed to complete onboarding", e);

@@ -177,7 +177,7 @@ export function TopNav() {
         "flex flex-col w-full flex-shrink-0 z-50 transition-all duration-300",
         isHomePage && !isScrolled
           ? "bg-transparent"
-          : "bg-[#1a2530]/80 backdrop-blur-md shadow-lg border-b border-white/10"
+          : "bg-[#1a2530]/100 backdrop-blur-md shadow-lg border-b border-white/10"
       )}
     >
       {/* Top Black Bar */}
@@ -267,7 +267,7 @@ export function TopNav() {
               }}
             />
           ) : (
-            <SignInButton mode="modal">
+            <SignInButton>
               <button suppressHydrationWarning className="text-sm font-semibold bg-brand-green text-black px-3 py-1.5 rounded hover:bg-brand-teal transition-colors">
                 Sign In
               </button>

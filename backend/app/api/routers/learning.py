@@ -163,6 +163,10 @@ class CourseCreate(BaseModel):
     learning_package_id: int | None = None
     course_type: str = "SCORM"
 
+class CourseUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+
 @router.post("/courses", response_model=None)
 async def create_course(
     course_in: CourseCreate,
@@ -190,6 +194,28 @@ async def create_course(
         )
         db.add(module)
     
+    await db.commit()
+    await db.refresh(course)
+    return course
+
+@router.put("/courses/{course_id}", response_model=None)
+async def update_course(
+    course_id: int,
+    course_in: CourseUpdate,
+    db: AsyncSession = Depends(get_db)
+):
+    from fastapi import HTTPException
+    result = await db.execute(select(Course).where(Course.id == course_id))
+    course = result.scalars().first()
+    
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+        
+    if course_in.title is not None:
+        course.title = course_in.title
+    if course_in.description is not None:
+        course.description = course_in.description
+        
     await db.commit()
     await db.refresh(course)
     return course
