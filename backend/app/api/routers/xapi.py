@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Body, Request
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import Dict, Any, List, Union
@@ -7,9 +8,62 @@ import logging
 from app.core.database import get_db
 from app.learning.services.lrs_service import NativeLRSService
 from app.learning.standards.cmi5.validation import Cmi5Validator
-from app.models.learning import XApiState, XApiProfile
+from app.learning.standards.cmi5.validation import Cmi5Validator
+from app.models.learning import XApiState, XApiProfile, LearningAttempt, LearningPackage
 
 router = APIRouter()
+
+class XApiInitRequest(BaseModel):
+    package_id: int
+    user_id: str
+
+@router.post("/launch/init")
+async def initialize_xapi_session(req: XApiInitRequest, db: AsyncSession = Depends(get_db)):
+    import uuid
+    # 1. Check if package exists
+    pkg_res = await db.execute(select(LearningPackage).where(LearningPackage.id == req.package_id))
+    package = pkg_res.scalars().first()
+    if not package:
+        raise HTTPException(status_code=404, detail="Package not found")
+        
+    # 2. Find latest attempt
+    attempt_res = await db.execute(
+        select(LearningAttempt)
+        .where(LearningAttempt.user_id == req.user_id)
+        .where(LearningAttempt.package_id == req.package_id)
+        .order_by(LearningAttempt.attempt_number.desc())
+    )
+    attempt = attempt_res.scalars().first()
+    
+    # Look up course_id from CourseModule (if available)
+    from app.models.learning import CourseModule
+    module_res = await db.execute(select(CourseModule).where(CourseModule.learning_package_id == req.package_id))
+    module = module_res.scalars().first()
+    course_id = module.course_id if module else None
+
+    # 3. Create attempt if it doesn't exist
+    if not attempt:
+        attempt = LearningAttempt(
+            user_id=req.user_id,
+            course_id=course_id,
+            package_id=req.package_id,
+            attempt_number=1,
+            standard=package.package_type or "xapi",
+            status="incomplete"
+        )
+        db.add(attempt)
+        await db.commit()
+        await db.refresh(attempt)
+        
+    # 4. Generate stable registration UUID based on the attempt ID
+    # We use a deterministic namespace UUID so that Attempt ID 25 always yields the same UUID
+    # UUID version 5 using a custom namespace (e.g., UUID_URL)
+    stable_registration = str(uuid.uuid5(uuid.NAMESPACE_URL, f"urn:lms:attempt:{attempt.id}"))
+    
+    return {
+        "attempt_id": attempt.id,
+        "registration": stable_registration
+    }
 
 @router.post("/statements")
 async def post_statement(
@@ -214,6 +268,7 @@ async def get_activity_state(
     db: AsyncSession = Depends(get_db)
 ):
     import json
+    logging.info(f"[xAPI-GET-STATE] Req: stateId={stateId}, activityId={activityId}, registration={registration}, agent={agent}")
     try:
         agent_obj = json.loads(agent)
         agent_normalized = json.dumps(agent_obj, sort_keys=True)
@@ -231,9 +286,18 @@ async def get_activity_state(
     
     if state:
         from fastapi.responses import Response
-        if isinstance(state.state_data, str):
-            return Response(content=state.state_data, media_type="application/json")
-        return state.state_data
+        import json
+        logging.info(f"[xAPI-GET-STATE] Found state in DB. Type: {type(state.state_data)}")
+        c_type = state.content_type or "application/octet-stream"
+        
+        if isinstance(state.state_data, (dict, list)):
+            return Response(content=json.dumps(state.state_data), media_type=c_type)
+        elif isinstance(state.state_data, str):
+            return Response(content=state.state_data, media_type=c_type)
+        else:
+            return Response(content=str(state.state_data), media_type=c_type)
+        
+    logging.info(f"[xAPI-GET-STATE] State not found in DB.")
         
     # cmi5 requires LMS.LaunchData to be pre-populated by the LMS
     if stateId == "LMS.LaunchData":
@@ -265,6 +329,8 @@ async def put_activity_state(
     db: AsyncSession = Depends(get_db)
 ):
     import json
+    content_type = request.headers.get("content-type")
+    logging.info(f"[xAPI-PUT-STATE] Req: stateId={stateId}, activityId={activityId}, registration={registration}, type={content_type}")
     try:
         agent_obj = json.loads(agent)
         agent_normalized = json.dumps(agent_obj, sort_keys=True)
@@ -273,8 +339,10 @@ async def put_activity_state(
         
     try:
         data = await request.json()
+        logging.info(f"[xAPI-PUT-STATE] Parsed as JSON: {type(data)}")
     except:
         data = (await request.body()).decode('utf-8')
+        logging.info(f"[xAPI-PUT-STATE] Parsed as string: {len(data)} chars")
         
     query = select(XApiState).where(XApiState.activity_id == activityId).where(XApiState.agent_id == agent_normalized).where(XApiState.state_id == stateId)
     if registration:
@@ -287,8 +355,9 @@ async def put_activity_state(
     
     if state:
         state.state_data = data
+        state.content_type = content_type
     else:
-        state = XApiState(activity_id=activityId, agent_id=agent_normalized, registration=registration, state_id=stateId, state_data=data)
+        state = XApiState(activity_id=activityId, agent_id=agent_normalized, registration=registration, state_id=stateId, state_data=data, content_type=content_type)
         db.add(state)
         
     await db.commit()
@@ -315,6 +384,8 @@ async def post_activity_state(
         agent = agent or form.get("agent")
         registration = registration or form.get("registration")
         content = form.get("content")
+        actual_content_type = form.get("contentType") or "application/octet-stream"
+        content_type = actual_content_type
         try:
             new_data = json.loads(content) if content else {}
         except:
@@ -322,8 +393,10 @@ async def post_activity_state(
     else:
         try:
             new_data = await request.json()
+            logging.info(f"[xAPI-POST-STATE] Req: stateId={stateId}, activityId={activityId}, registration={registration}. Parsed as JSON.")
         except:
             new_data = (await request.body()).decode('utf-8')
+            logging.info(f"[xAPI-POST-STATE] Req: stateId={stateId}, activityId={activityId}, registration={registration}. Parsed as string.")
             
     if not stateId or not activityId or not agent:
         raise HTTPException(status_code=400, detail="Missing required parameters (stateId, activityId, agent)")
@@ -344,13 +417,22 @@ async def post_activity_state(
     state = result.scalars().first()
     
     if state and isinstance(state.state_data, dict) and isinstance(new_data, dict):
-        merged = dict(state.state_data)
-        merged.update(new_data)
-        state.state_data = merged
+        def deep_merge(dict1, dict2):
+            result = dict(dict1)
+            for k, v in dict2.items():
+                if k in result and isinstance(result[k], dict) and isinstance(v, dict):
+                    result[k] = deep_merge(result[k], v)
+                else:
+                    result[k] = v
+            return result
+            
+        state.state_data = deep_merge(state.state_data, new_data)
+        state.content_type = content_type
     elif state:
         state.state_data = new_data
+        state.content_type = content_type
     else:
-        state = XApiState(activity_id=activityId, agent_id=agent_normalized, registration=registration, state_id=stateId, state_data=new_data)
+        state = XApiState(activity_id=activityId, agent_id=agent_normalized, registration=registration, state_id=stateId, state_data=new_data, content_type=content_type)
         db.add(state)
         
     await db.commit()

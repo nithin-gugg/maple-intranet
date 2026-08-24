@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton, useUser, SignInButton, useAuth } from "@clerk/nextjs";
-import { Search, Bell, Settings as SettingsIcon, ChevronDown, HelpCircle, Share2, CheckCheck, Loader2 } from "lucide-react";
+import { Search, Bell, Settings as SettingsIcon, ChevronDown, HelpCircle, Share2, CheckCheck, Loader2, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef } from "react";
 import { useWebSocket } from "@/hooks/use-websocket";
@@ -22,6 +22,7 @@ export function TopNav() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { lastMessage } = useWebSocket();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -61,6 +62,11 @@ export function TopNav() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Close mobile menu when pathname changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
 
   const fetchNotifications = async () => {
     try {
@@ -181,13 +187,22 @@ export function TopNav() {
       )}
     >
       {/* Top Black Bar */}
-      <div className="flex h-12 items-center justify-between px-6">
-        <div className="flex items-center text-white font-semibold text-sm">
+      <div className="flex h-14 md:h-12 items-center justify-between px-4 md:px-6 gap-2 md:gap-4">
+        
+        {/* Mobile Menu Toggle */}
+        <button 
+          className="md:hidden text-white p-1"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        </button>
+
+        <div className="hidden sm:flex items-center text-white font-semibold text-xs md:text-sm whitespace-nowrap">
           Maple Learning Solutions
         </div>
         
-        {/* Search */}
-        <div className="relative w-full max-w-lg flex items-center">
+        {/* Search - Desktop */}
+        <div className="relative hidden md:flex w-full max-w-lg items-center">
           <Search className="absolute left-3 h-4 w-4 text-gray-500" />
           <input
             suppressHydrationWarning
@@ -197,14 +212,17 @@ export function TopNav() {
           />
         </div>
 
-        <div className="flex items-center gap-4 text-white">
-          <button suppressHydrationWarning className="hover:text-gray-300 transition-colors">
+        {/* Mobile Spacer if Search is hidden */}
+        <div className="flex-1 md:hidden"></div>
+
+        <div className="flex items-center gap-2 md:gap-4 text-white">
+          <button suppressHydrationWarning className="hidden sm:block hover:text-gray-300 transition-colors">
             <HelpCircle className="h-5 w-5" />
           </button>
-          <Link href="/settings" className="hover:text-gray-300 transition-colors">
+          <Link href="/settings" className="hidden sm:block hover:text-gray-300 transition-colors">
             <SettingsIcon className="h-5 w-5" />
           </Link>
-          <button suppressHydrationWarning className="hover:text-gray-300 transition-colors">
+          <button suppressHydrationWarning className="hidden sm:block hover:text-gray-300 transition-colors">
             <Share2 className="h-5 w-5" />
           </button>
           <div className="relative" ref={dropdownRef}>
@@ -277,13 +295,13 @@ export function TopNav() {
       </div>
 
       {/* Second Banner Bar */}
-      <div className="flex flex-col justify-end bg-transparent h-15 px-6 relative overflow-visible">
-        <div className="flex items-center gap-8 pb-3 mt-auto relative z-10">
-          <h1 className="text-2xl font-black text-white uppercase tracking-tight">
+      <div className="flex flex-col justify-end bg-transparent h-14 md:h-15 px-4 md:px-6 relative overflow-visible">
+        <div className="flex items-center gap-4 md:gap-8 pb-2 md:pb-3 mt-auto relative z-10">
+          <h1 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight">
             THE HUB
           </h1>
           
-          <div className="flex items-center gap-6 ml-4">
+          <div className="hidden md:flex items-center gap-6 ml-4">
             <NavItem title="Home" />
             <NavItem title="Company Resources" links={companyResources} />
             <NavItem title="Employee Resources" links={employeeResources} />
@@ -294,6 +312,83 @@ export function TopNav() {
           </div>
         </div>
       </div>
+
+      {/* Mobile Menu Dropdown */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden absolute top-[100%] left-0 w-full bg-[#1a2530] border-t border-white/10 shadow-xl overflow-y-auto max-h-[calc(100vh-100px)]">
+          <div className="p-4 flex flex-col gap-4">
+            {/* Search - Mobile */}
+            <div className="relative w-full flex items-center">
+              <Search className="absolute left-3 h-4 w-4 text-gray-500" />
+              <input
+                suppressHydrationWarning
+                type="text"
+                placeholder="Search this site"
+                className="h-10 w-full rounded-md bg-white pl-10 pr-4 text-sm text-black outline-none focus:ring-2 focus:ring-brand-green"
+              />
+            </div>
+            
+            {/* Mobile Nav Links */}
+            <div className="flex flex-col gap-2 mt-2">
+              <Link href="/" className="text-white font-semibold py-2 border-b border-white/10">Home</Link>
+              
+              <div className="py-2 border-b border-white/10">
+                <div className="text-white font-semibold mb-2">Company Resources</div>
+                <div className="flex flex-col pl-4 gap-2">
+                  {companyResources.map(link => (
+                    <Link key={link.name} href={link.href} className="text-gray-300 text-sm py-1">{link.name}</Link>
+                  ))}
+                </div>
+              </div>
+
+              <div className="py-2 border-b border-white/10">
+                <div className="text-white font-semibold mb-2">Employee Resources</div>
+                <div className="flex flex-col pl-4 gap-2">
+                  {employeeResources.map(link => (
+                    <Link key={link.name} href={link.href} className="text-gray-300 text-sm py-1">{link.name}</Link>
+                  ))}
+                </div>
+              </div>
+
+              <div className="py-2 border-b border-white/10">
+                <div className="text-white font-semibold mb-2">Workspaces & Teams</div>
+                <div className="flex flex-col pl-4 gap-2">
+                  {workspaces.map(link => (
+                    <Link key={link.name} href={link.href} className="text-gray-300 text-sm py-1">{link.name}</Link>
+                  ))}
+                </div>
+              </div>
+
+              {isAdmin && (
+                <div className="py-2 border-b border-white/10">
+                  <div className="text-white font-semibold mb-2">Admin</div>
+                  <div className="flex flex-col pl-4 gap-2">
+                    {adminLinks.map(link => (
+                      <Link key={link.name} href={link.href} className="text-gray-300 text-sm py-1">{link.name}</Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Mobile Quick Actions */}
+              <div className="flex gap-4 pt-4 mt-2 justify-center">
+                <button className="text-white flex flex-col items-center gap-1">
+                  <HelpCircle className="h-5 w-5" />
+                  <span className="text-xs">Help</span>
+                </button>
+                <Link href="/settings" className="text-white flex flex-col items-center gap-1">
+                  <SettingsIcon className="h-5 w-5" />
+                  <span className="text-xs">Settings</span>
+                </Link>
+                <button className="text-white flex flex-col items-center gap-1">
+                  <Share2 className="h-5 w-5" />
+                  <span className="text-xs">Share</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

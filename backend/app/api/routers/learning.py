@@ -41,7 +41,13 @@ async def get_courses(
             "category": {"id": c.category.id, "name": c.category.name} if c.category else None,
             "course_type": c.course_type,
             "progress_percent": 0,
-            "status": "not attempted"
+            "status": "not attempted",
+            "score": None,
+            "total_time_seconds": 0,
+            "last_accessed_at": None,
+            "started_at": None,
+            "completed_at": None,
+            "attempt_number": 0
         }
         
         if user_id:
@@ -56,6 +62,12 @@ async def get_courses(
             if attempt:
                 c_dict["progress_percent"] = attempt.progress_percent or 0
                 c_dict["status"] = attempt.status
+                c_dict["score"] = attempt.score
+                c_dict["total_time_seconds"] = attempt.total_time_seconds or 0
+                c_dict["last_accessed_at"] = attempt.last_activity_at.isoformat() if attempt.last_activity_at else None
+                c_dict["started_at"] = attempt.started_at.isoformat() if attempt.started_at else None
+                c_dict["completed_at"] = attempt.completed_at.isoformat() if attempt.completed_at else None
+                c_dict["attempt_number"] = attempt.attempt_number
                 
         response_data.append(c_dict)
 
@@ -142,14 +154,24 @@ async def mark_course_complete(
     attempt = attempt_res.scalars().first()
     
     if not attempt:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="No active attempt found for this course.")
-        
-    attempt.status = "completed"
-    attempt.progress_percent = 100
-    if not attempt.completed_at:
-        attempt.completed_at = datetime.datetime.utcnow()
-    attempt.last_activity_at = datetime.datetime.utcnow()
+        # Create a new attempt if it doesn't exist (e.g. native course or skipped initialization)
+        attempt = LearningAttempt(
+            user_id=req.user_id,
+            course_id=course_id,
+            attempt_number=1,
+            status="completed",
+            progress_percent=100,
+            started_at=datetime.datetime.utcnow(),
+            completed_at=datetime.datetime.utcnow(),
+            last_activity_at=datetime.datetime.utcnow()
+        )
+        db.add(attempt)
+    else:
+        attempt.status = "completed"
+        attempt.progress_percent = 100
+        if not attempt.completed_at:
+            attempt.completed_at = datetime.datetime.utcnow()
+        attempt.last_activity_at = datetime.datetime.utcnow()
     
     await db.commit()
     return {"message": "Course marked as completed"}

@@ -32,8 +32,6 @@ export default function XApiPlayer({ packageId, entryPointUrl, userId }: XApiPla
         
         const endpoint = encodeURIComponent(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/xapi/`);
         
-        // As per xAPI Launch Guidelines, provide endpoint, auth, and actor via URL parameters
-        // The auth string for Basic Auth or Bearer token
         const auth = encodeURIComponent(`Bearer ${token}`);
         
         const actor = encodeURIComponent(JSON.stringify({
@@ -46,23 +44,22 @@ export default function XApiPlayer({ packageId, entryPointUrl, userId }: XApiPla
         
         const activityId = encodeURIComponent(`${window.location.origin}/courses/${packageId}`);
         
-        // Generate a deterministic UUID based on userId and packageId to ensure state resumes across sessions
-        const generateDeterministicUUID = (str: string) => {
-          let hash = 0;
-          for (let i = 0; i < str.length; i++) {
-            const char = str.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
-          }
-          let hex = Math.abs(hash).toString(16);
-          while (hex.length < 32) {
-            hex += (Math.abs(hash * 31).toString(16));
-          }
-          hex = hex.substring(0, 32);
-          return `${hex.substring(0, 8)}-${hex.substring(8, 12)}-4${hex.substring(13, 16)}-a${hex.substring(17, 20)}-${hex.substring(20, 32)}`;
-        };
+        // 1. Initialize Attempt via API to get stable registration UUID
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/xapi/launch/init`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ package_id: packageId, user_id: userId }),
+        });
         
-        const registration = generateDeterministicUUID(`${userId}-${packageId}`);
+        if (!res.ok) {
+          throw new Error('Failed to initialize xAPI session');
+        }
+        
+        const data = await res.json();
+        const registration = data.registration;
 
         const finalUrl = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}endpoint=${endpoint}&auth=${auth}&actor=${actor}&registration=${registration}&activity_id=${activityId}`;
         

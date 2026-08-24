@@ -1,7 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { BookOpen, Calendar as CalendarIcon, FileText, ArrowRight, PlayCircle, Clock } from "lucide-react";
 import Link from "next/link";
+import { useAuth } from "@clerk/nextjs";
 
 import { AITrendingNews } from "@/components/home/AITrendingNews";
 
@@ -11,10 +13,30 @@ export default function EmployeeDashboardPage() {
     { id: 2, title: "Security Compliance Training", time: "Friday, 2:00 PM", type: "TRAINING" }
   ];
 
-  const continueLearning = [
-    { id: 1, title: "Information Security 2026", progress: 65 },
-    { id: 2, title: "Advanced React Patterns", progress: 30 }
-  ];
+  const { userId } = useAuth();
+  const [continueLearning, setContinueLearning] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!userId) return;
+    const fetchCourses = async () => {
+      try {
+        const url = new URL(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/learning/courses`);
+        url.searchParams.append("user_id", userId);
+        const res = await fetch(url.toString());
+        const data = await res.json();
+        
+        // Filter for in-progress courses
+        const inProgress = data.filter((c: any) => 
+          c.status !== "completed" && c.status !== "passed" && c.progress_percent > 0
+        ).slice(0, 3);
+        
+        setContinueLearning(inProgress);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchCourses();
+  }, [userId]);
 
   return (
     <div className="space-y-10 pb-12">

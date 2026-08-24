@@ -28,45 +28,116 @@ class Scorm2004Adapter:
         }
 
     @staticmethod
-    def update_attempt_from_cmi(cmi_data: Dict[str, str]) -> Dict[str, Any]:
-        """
-        Parses SCORM 2004 CMI data to update the universal LearningAttempt model.
-        Returns a dictionary of fields to update on LearningAttempt.
-        """
-        updates = {}
+    def _parse_iso8601_duration(duration_str: str) -> float:
+        """Parses SCORM 2004 ISO 8601 duration (e.g., PT1H30M) into seconds."""
+        if not duration_str:
+            return 0.0
+        import isodate
+        try:
+            return isodate.parse_duration(duration_str).total_seconds()
+        except:
+            return 0.0
+
+    @staticmethod
+    def _format_iso8601_duration(seconds: float) -> str:
+        """Formats seconds back into SCORM 2004 ISO 8601 duration."""
+        import isodate
+        import datetime
+        return isodate.duration_isoformat(datetime.timedelta(seconds=seconds))
+
+    @staticmethod
+    def calculate_total_time(total_time_str: str, session_time_str: str) -> str:
+        """Adds current session_time to total_time per SCORM 2004 rules."""
+        total_sec = Scorm2004Adapter._parse_iso8601_duration(total_time_str)
+        session_sec = Scorm2004Adapter._parse_iso8601_duration(session_time_str)
+        return Scorm2004Adapter._format_iso8601_duration(total_sec + session_sec)
+
+    @staticmethod
+    def extract_state_columns(cmi_data: Dict[str, str]) -> Dict[str, Any]:
+        """Extracts strongly typed columns from the raw CMI JSON for ScormRuntimeState (SCORM 2004)."""
+        score_raw = cmi_data.get("cmi.score.raw")
+        score_min = cmi_data.get("cmi.score.min")
+        score_max = cmi_data.get("cmi.score.max")
         
-        # 1. Status Mapping (SCORM 2004 splits status into completion and success)
+        def safe_float(val):
+            if val and str(val).strip():
+                try: return float(val)
+                except: return None
+            return None
+            
+        return {
+            "lesson_status": cmi_data.get("cmi.completion_status"),
+            "lesson_location": cmi_data.get("cmi.location"),
+            "suspend_data": cmi_data.get("cmi.suspend_data"),
+            "score_raw": safe_float(score_raw),
+            "score_min": safe_float(score_min),
+            "score_max": safe_float(score_max),
+            "session_time": cmi_data.get("cmi.session_time"),
+            "total_time": cmi_data.get("cmi.total_time"),
+            "lesson_mode": cmi_data.get("cmi.mode"),
+            "credit": cmi_data.get("cmi.credit"),
+            "entry": cmi_data.get("cmi.entry"),
+            "exit": cmi_data.get("cmi.exit"),
+        }
+
+    @staticmethod
+    def generate_learning_event(cmi_data: Dict[str, str], attempt) -> Any:
+        from app.learning.events import LearningEvent
+        from datetime import datetime, timezone
+        import uuid
+        
         completion_status = cmi_data.get("cmi.completion_status", "unknown")
         success_status = cmi_data.get("cmi.success_status", "unknown")
         
+        event_type = "progress"
         if success_status in ["passed", "failed"]:
-            updates["status"] = success_status
-        elif completion_status in ["completed", "incomplete"]:
-            updates["status"] = completion_status
+            event_type = success_status
+        elif completion_status == "completed":
+            event_type = "completed"
+        elif completion_status == "unknown":
+            event_type = "initialized"
             
-        # 2. Score Mapping
+        progress = cmi_data.get("cmi.progress_measure")
+        progress_pct = 0
+        if progress and progress.strip():
+            try:
+                progress_pct = int(float(progress) * 100)
+            except ValueError:
+                pass
+        elif completion_status == "completed" or success_status == "passed":
+            progress_pct = 100
+            
         score_scaled = cmi_data.get("cmi.score.scaled")
         score_raw = cmi_data.get("cmi.score.raw")
-        
+        score_float = None
         if score_scaled and score_scaled.strip():
             try:
-                updates["score"] = float(score_scaled) * 100 # usually 0.0 to 1.0
+                score_float = float(score_scaled) * 100
             except ValueError:
                 pass
         elif score_raw and score_raw.strip():
             try:
-                updates["score"] = float(score_raw)
+                score_float = float(score_raw)
             except ValueError:
                 pass
                 
-        # 3. Progress Mapping
-        progress = cmi_data.get("cmi.progress_measure")
-        if progress and progress.strip():
-            try:
-                updates["progress_percent"] = int(float(progress) * 100)
-            except ValueError:
-                pass
-        elif completion_status == "completed":
-            updates["progress_percent"] = 100
+        total_time_str = cmi_data.get("cmi.total_time", "")
+        duration_sec = int(Scorm2004Adapter._parse_iso8601_duration(total_time_str)) if total_time_str else 0
             
-        return updates
+        return LearningEvent(
+            user_id=attempt.user_id,
+            course_id=attempt.course_id,
+            package_id=attempt.package_id,
+            attempt_id=attempt.id,
+            activity_id=None,
+            event_type=event_type,
+            progress_percent=progress_pct,
+            completion_status=completion_status,
+            success_status=success_status,
+            score_raw=score_float,
+            duration_seconds=duration_sec,
+            location=cmi_data.get("cmi.location"),
+            timestamp=datetime.now(timezone.utc),
+            source_standard="SCORM_2004",
+            source_event_id=str(uuid.uuid4())
+        )

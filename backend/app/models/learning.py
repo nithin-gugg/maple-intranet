@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Any
 from sqlalchemy import String, Boolean, DateTime, ForeignKey, Text, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -225,7 +225,8 @@ class XApiState(Base):
     agent_id: Mapped[str] = mapped_column(String(255), index=True) # Usually the mbox or account string
     registration: Mapped[Optional[str]] = mapped_column(String(36), index=True)
     state_id: Mapped[str] = mapped_column(String(255), index=True)
-    state_data: Mapped[dict] = mapped_column(JSON)
+    state_data: Mapped[Any] = mapped_column(JSON)
+    content_type: Mapped[Optional[str]] = mapped_column(String(100))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 class XApiProfile(Base):

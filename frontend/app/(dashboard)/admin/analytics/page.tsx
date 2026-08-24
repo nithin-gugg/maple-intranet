@@ -9,28 +9,16 @@ export default function DashboardPage() {
   const [completions, setCompletions] = useState<any[]>([]);
 
   useEffect(() => {
-    // In a real app, we would fetch from /api/v1/analytics/metrics
-    // For now we will use mock data that matches the API structure
-    setMetrics({
-        activeUsers: 245,
-        coursesCompleted: 1892,
-        documentsViewed: 5430,
-        aiQueries: 892,
-        courseCompletionRate: [
-            { month: "Jan", rate: 45 },
-            { month: "Feb", rate: 52 },
-            { month: "Mar", rate: 58 },
-            { month: "Apr", rate: 65 },
-            { month: "May", rate: 72 },
-            { month: "Jun", rate: 81 },
-        ],
-        departmentEngagement: [
-            { name: "Engineering", value: 85 },
-            { name: "Sales", value: 72 },
-            { name: "Marketing", value: 64 },
-            { name: "HR", value: 92 },
-        ]
-    });
+    const fetchMetrics = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/analytics/metrics`);
+        const data = await res.json();
+        setMetrics(data);
+      } catch (err) {
+        console.error("Failed to fetch metrics:", err);
+      }
+    };
+    fetchMetrics();
 
     const fetchCompletions = async () => {
       try {

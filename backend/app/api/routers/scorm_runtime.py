@@ -36,10 +36,17 @@ async def initialize_session(req: InitRequest, db: AsyncSession = Depends(get_db
     )
     attempt = attempt_res.scalars().first()
     
+    # Look up course_id from CourseModule
+    from app.models.learning import CourseModule
+    module_res = await db.execute(select(CourseModule).where(CourseModule.learning_package_id == req.package_id))
+    module = module_res.scalars().first()
+    course_id = module.course_id if module else None
+
     # 3. Create attempt if it doesn't exist
     if not attempt:
         attempt = LearningAttempt(
             user_id=req.user_id,
+            course_id=course_id,
             package_id=req.package_id,
             attempt_number=1,
             standard=package.package_type,
@@ -125,15 +132,28 @@ async def commit_data(req: CommitRequest, db: AsyncSession = Depends(get_db)):
     # 2. Update the CMI JSON data
     new_cmi = {**(state.cmi_data or {}), **req.cmi_data}
     
+    # Fetch attempt to check standard
+    attempt_res = await db.execute(select(LearningAttempt).where(LearningAttempt.id == req.attempt_id))
+    attempt = attempt_res.scalars().first()
+    
     # 3. Accumulate Time
     if "cmi.core.session_time" in req.cmi_data:
         total_time_str = state.total_time or "00:00:00"
         session_time_str = req.cmi_data["cmi.core.session_time"]
         new_total_time = Scorm12Adapter.calculate_total_time(total_time_str, session_time_str)
         new_cmi["cmi.core.total_time"] = new_total_time
+    elif "cmi.session_time" in req.cmi_data:
+        total_time_str = state.total_time or "PT0H0M0S"
+        session_time_str = req.cmi_data["cmi.session_time"]
+        new_total_time = Scorm2004Adapter.calculate_total_time(total_time_str, session_time_str)
+        new_cmi["cmi.total_time"] = new_total_time
     
     # 4. Extract strongly typed columns
-    columns = Scorm12Adapter.extract_state_columns(new_cmi)
+    if attempt and attempt.standard == "scorm_2004":
+        columns = Scorm2004Adapter.extract_state_columns(new_cmi)
+    else:
+        columns = Scorm12Adapter.extract_state_columns(new_cmi)
+        
     for key, value in columns.items():
         if value is not None:
             setattr(state, key, value)
@@ -141,19 +161,25 @@ async def commit_data(req: CommitRequest, db: AsyncSession = Depends(get_db)):
     # Clear session time from DB so it's not accumulated twice if they don't reset it
     if "cmi.core.session_time" in req.cmi_data:
         state.session_time = "00:00:00"
+    elif "cmi.session_time" in req.cmi_data:
+        state.session_time = "PT0H0M0S"
         
     state.cmi_data = new_cmi 
     
-    # 5. Update the LearningAttempt model based on the CMI data
-    attempt_res = await db.execute(select(LearningAttempt).where(LearningAttempt.id == req.attempt_id))
-    attempt = attempt_res.scalars().first()
-    
     if attempt:
+        # Auto-heal missing course_id for attempts created before the initialize fix
+        if attempt.course_id is None and attempt.package_id is not None:
+            from app.models.learning import CourseModule
+            module_res = await db.execute(select(CourseModule).where(CourseModule.learning_package_id == attempt.package_id))
+            module = module_res.scalars().first()
+            if module:
+                attempt.course_id = module.course_id
+
         print(f"\n[TRACE 3] Found attempt. user ID: {attempt.user_id}, course ID: {attempt.course_id}, package ID: {attempt.package_id}")
         
+        from app.learning.services.progress_service import ProgressService
+        
         if attempt.standard == "scorm_1_2":
-            from app.learning.services.progress_service import ProgressService
-            
             print(f"\n[TRACE 4] ---------------------------------------------")
             print(f"[TRACE 4] Calling Scorm12Adapter.generate_learning_event()")
             print(f"[TRACE 4] current lesson_status in CMI state: {new_cmi.get('cmi.core.lesson_status')}")
@@ -168,9 +194,18 @@ async def commit_data(req: CommitRequest, db: AsyncSession = Depends(get_db)):
             await ProgressService.process_event(event, db)
             
         elif attempt.standard == "scorm_2004":
-            updates = Scorm2004Adapter.update_attempt_from_cmi(new_cmi)
-            for key, value in updates.items():
-                setattr(attempt, key, value)
+            print(f"\n[TRACE 4] ---------------------------------------------")
+            print(f"[TRACE 4] Calling Scorm2004Adapter.generate_learning_event()")
+            print(f"[TRACE 4] current completion_status in CMI state: {new_cmi.get('cmi.completion_status')}")
+            print(f"[TRACE 4] previous attempt progress: {attempt.progress_percent}% (status: {attempt.status})")
+            
+            event = Scorm2004Adapter.generate_learning_event(new_cmi, attempt)
+            
+            print(f"[TRACE 4] generated event: {event.dict()}")
+            print(f"[TRACE 4] Sending to ProgressService")
+            print(f"[TRACE 4] ---------------------------------------------\n")
+            
+            await ProgressService.process_event(event, db)
             
     await db.commit()
     

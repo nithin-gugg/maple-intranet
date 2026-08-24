@@ -65,7 +65,13 @@ class ProgressService:
             attempt.score = event.score_raw
             
         if event.duration_seconds is not None:
-            attempt.total_time_seconds = event.duration_seconds
+            if event.source_standard in ["XAPI", "CMI5"]:
+                # For xAPI and CMI5, duration is usually session time, so we accumulate it
+                current_time = attempt.total_time_seconds or 0
+                attempt.total_time_seconds = current_time + event.duration_seconds
+            else:
+                # SCORM 1.2 and 2004 adapters provide the pre-accumulated total time
+                attempt.total_time_seconds = event.duration_seconds
 
         attempt.last_activity_at = event.timestamp
         
