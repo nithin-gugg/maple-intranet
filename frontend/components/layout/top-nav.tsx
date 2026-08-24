@@ -144,6 +144,7 @@ export function TopNav() {
     { name: "Admin Dashboard", href: "/admin/analytics" },
     { name: "Manage Documents", href: "/admin/documents" },
     { name: "Manage Courses", href: "/admin/courses" },
+    { name: "Manage Users", href: "/admin/users" },
   ];
 
   const NavItem = ({ title, links }: { title: string, links?: {name: string, href: string}[] }) => {
@@ -151,27 +152,38 @@ export function TopNav() {
     if (!links) {
       const isActive = pathname === "/";
       return (
-        <Link href="/" className={cn("text-white font-semibold text-sm pb-1", isActive && "border-b-2 border-white")}>
+        <Link href="/" className={cn(
+          "font-semibold text-sm py-1 relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:bg-[#00dc82] after:transition-transform after:duration-300",
+          isActive ? "text-[#00dc82] after:scale-x-100 after:origin-bottom-left" : "text-white after:scale-x-0 after:origin-bottom-right hover:text-[#00dc82] hover:after:scale-x-100 hover:after:origin-bottom-left"
+        )}>
           {title}
         </Link>
       );
     }
     
+    const isParentActive = links.some(link => pathname.startsWith(link.href));
+    
     return (
       <div className="group relative">
-        <button suppressHydrationWarning className="flex items-center gap-1 text-white text-sm font-semibold hover:text-gray-200 py-2">
+        <button suppressHydrationWarning className={cn(
+          "flex items-center gap-1 text-sm font-semibold py-1 relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:bg-[#00dc82] after:transition-transform after:duration-300",
+          isParentActive ? "text-[#00dc82] after:scale-x-100 after:origin-bottom-left" : "text-white after:scale-x-0 after:origin-bottom-right hover:text-[#00dc82] hover:after:scale-x-100 hover:after:origin-bottom-left"
+        )}>
           {title} <ChevronDown className="h-4 w-4" />
         </button>
         <div className="absolute left-0 top-full hidden w-48 flex-col bg-white shadow-lg border border-gray-200 rounded-md py-1 group-hover:flex z-50">
-          {links.map(link => (
-            <Link 
-              key={link.name} 
-              href={link.href}
-              className={cn("px-4 py-2 text-sm text-gray-700 hover:bg-gray-100", pathname.startsWith(link.href) && "bg-gray-50 font-medium text-brand-teal")}
-            >
-              {link.name}
-            </Link>
-          ))}
+          {links.map(link => {
+            const isChildActive = pathname.startsWith(link.href);
+            return (
+              <Link 
+                key={link.name} 
+                href={link.href}
+                className={cn("px-4 py-2 text-sm text-gray-700 hover:bg-gray-100", isChildActive && "bg-gray-50 font-medium text-[#00dc82]")}
+              >
+                {link.name}
+              </Link>
+            );
+          })}
         </div>
       </div>
     );
@@ -330,32 +342,35 @@ export function TopNav() {
             
             {/* Mobile Nav Links */}
             <div className="flex flex-col gap-2 mt-2">
-              <Link href="/" className="text-white font-semibold py-2 border-b border-white/10">Home</Link>
+              <Link href="/" className={cn("font-semibold py-2 border-b border-white/10 transition-colors", pathname === "/" ? "text-[#00dc82]" : "text-white hover:text-[#00dc82]")}>Home</Link>
               
               <div className="py-2 border-b border-white/10">
                 <div className="text-white font-semibold mb-2">Company Resources</div>
                 <div className="flex flex-col pl-4 gap-2">
-                  {companyResources.map(link => (
-                    <Link key={link.name} href={link.href} className="text-gray-300 text-sm py-1">{link.name}</Link>
-                  ))}
+                  {companyResources.map(link => {
+                    const isActive = pathname.startsWith(link.href);
+                    return <Link key={link.name} href={link.href} className={cn("text-sm py-1 transition-colors", isActive ? "text-[#00dc82] font-medium" : "text-gray-300 hover:text-[#00dc82]")}>{link.name}</Link>;
+                  })}
                 </div>
               </div>
 
               <div className="py-2 border-b border-white/10">
                 <div className="text-white font-semibold mb-2">Employee Resources</div>
                 <div className="flex flex-col pl-4 gap-2">
-                  {employeeResources.map(link => (
-                    <Link key={link.name} href={link.href} className="text-gray-300 text-sm py-1">{link.name}</Link>
-                  ))}
+                  {employeeResources.map(link => {
+                    const isActive = pathname.startsWith(link.href);
+                    return <Link key={link.name} href={link.href} className={cn("text-sm py-1 transition-colors", isActive ? "text-[#00dc82] font-medium" : "text-gray-300 hover:text-[#00dc82]")}>{link.name}</Link>;
+                  })}
                 </div>
               </div>
 
               <div className="py-2 border-b border-white/10">
                 <div className="text-white font-semibold mb-2">Workspaces & Teams</div>
                 <div className="flex flex-col pl-4 gap-2">
-                  {workspaces.map(link => (
-                    <Link key={link.name} href={link.href} className="text-gray-300 text-sm py-1">{link.name}</Link>
-                  ))}
+                  {workspaces.map(link => {
+                    const isActive = pathname.startsWith(link.href);
+                    return <Link key={link.name} href={link.href} className={cn("text-sm py-1 transition-colors", isActive ? "text-[#00dc82] font-medium" : "text-gray-300 hover:text-[#00dc82]")}>{link.name}</Link>;
+                  })}
                 </div>
               </div>
 
@@ -363,9 +378,10 @@ export function TopNav() {
                 <div className="py-2 border-b border-white/10">
                   <div className="text-white font-semibold mb-2">Admin</div>
                   <div className="flex flex-col pl-4 gap-2">
-                    {adminLinks.map(link => (
-                      <Link key={link.name} href={link.href} className="text-gray-300 text-sm py-1">{link.name}</Link>
-                    ))}
+                    {adminLinks.map(link => {
+                      const isActive = pathname.startsWith(link.href);
+                      return <Link key={link.name} href={link.href} className={cn("text-sm py-1 transition-colors", isActive ? "text-[#00dc82] font-medium" : "text-gray-300 hover:text-[#00dc82]")}>{link.name}</Link>;
+                    })}
                   </div>
                 </div>
               )}
