@@ -34,52 +34,33 @@ class XApiAdapter:
                 logging.warning(f"[xAPI] Cannot resolve user_id from actor: {actor}")
                 continue
                 
-            # 2. Resolve Course/Package/Attempt
+            # 2. Resolve Attempt deterministically
             registration = stmt.get("context", {}).get("registration")
             activity_id = stmt.get("object", {}).get("id")
             
-            # The activity ID usually contains the package_id in our LMS: e.g. /courses/{packageId}
-            # Or we can look up by registration if we map it in the DB.
-            # For now, we find the active attempt for this user and package/course.
-            # If we encoded package_id in activity_id:
-            package_id = None
-            if activity_id and "/courses/" in activity_id:
-                try:
-                    package_id = int(activity_id.split("/")[-1])
-                except:
-                    pass
-                    
-            if not package_id and registration:
-                # Try to resolve activity_id from XApiState if it was launched via state API
-                from app.models.learning import XApiState
-                state_query = select(XApiState).where(XApiState.registration == registration)
-                state_result = await db.execute(state_query)
-                state = state_result.scalars().first()
-                if state and state.activity_id and "/courses/" in state.activity_id:
-                    try:
-                        package_id = int(state.activity_id.split("/")[-1])
-                    except:
-                        pass
-            
-            query = select(LearningAttempt).where(LearningAttempt.user_id == user_id)
-            if package_id:
-                query = query.where(LearningAttempt.package_id == package_id)
-            elif registration:
-                # Fallback: check if we already have a LearningActivityEvent for this registration
-                from app.models.learning import LearningActivityEvent
-                from sqlalchemy import cast, String
-                # Simple textual fallback for JSON
-                event_query = select(LearningActivityEvent.attempt_id).where(
-                    cast(LearningActivityEvent.metadata_json, String).like(f'%"{registration}"%')
-                ).limit(1)
-                event_res = await db.execute(event_query)
-                attempt_id = event_res.scalars().first()
-                if attempt_id:
-                    query = query.where(LearningAttempt.id == attempt_id)
+            attempt = None
+            if registration:
+                # Deterministic lookup by UUID
+                query = select(LearningAttempt).where(LearningAttempt.xapi_registration_uuid == registration)
+                result = await db.execute(query)
+                attempt = result.scalars().first()
                 
-            query = query.order_by(LearningAttempt.attempt_number.desc())
-            result = await db.execute(query)
-            attempt = result.scalars().first()
+            if not attempt:
+                # Fallback lookup by user_id and package_id for older statements
+                package_id = None
+                if activity_id and "/courses/" in activity_id:
+                    try:
+                        package_id = int(activity_id.split("/")[-1])
+                    except ValueError:
+                        pass
+                        
+                if package_id:
+                    query = select(LearningAttempt).where(
+                        LearningAttempt.user_id == user_id,
+                        LearningAttempt.package_id == package_id
+                    ).order_by(LearningAttempt.attempt_number.desc())
+                    result = await db.execute(query)
+                    attempt = result.scalars().first()
             
             if not attempt:
                 logging.warning(f"[xAPI] Cannot resolve active attempt for user {user_id} and activity {activity_id} (registration {registration})")

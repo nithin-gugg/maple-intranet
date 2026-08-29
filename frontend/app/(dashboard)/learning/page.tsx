@@ -76,18 +76,21 @@ export default function LearningCatalogPage() {
 
       <div className="flex gap-2 overflow-x-auto pb-2">
         <button 
+          suppressHydrationWarning
           className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium ${filter === "all" ? "bg-ink text-on-dark" : "border border-hairline text-slate-600 hover:bg-surface-soft"}`} 
           onClick={() => setFilter("all")}
         >
           All Courses
         </button>
         <button 
+          suppressHydrationWarning
           className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium ${filter === "in_progress" ? "bg-ink text-on-dark" : "border border-hairline text-slate-600 hover:bg-surface-soft"}`} 
           onClick={() => setFilter("in_progress")}
         >
           In Progress
         </button>
         <button 
+          suppressHydrationWarning
           className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium ${filter === "completed" ? "bg-ink text-on-dark" : "border border-hairline text-slate-600 hover:bg-surface-soft"}`} 
           onClick={() => setFilter("completed")}
         >
@@ -165,6 +168,7 @@ export default function LearningCatalogPage() {
                     Review
                   </a>
                   <button 
+                    suppressHydrationWarning
                     onClick={() => {
                       if(confirm("Are you sure you want to restart this course? A new attempt will be created.")) {
                         fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/learning/courses/${course.id}/restart`, {

@@ -38,8 +38,9 @@ export default function AiAssistantPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] max-w-4xl mx-auto bg-canvas rounded-xl border border-hairline shadow-sm overflow-hidden">
-      {/* Header */}
+    <div className="flex flex-col max-w-4xl mx-auto ">
+      <p className="text-center mt-3 text-brand-teal">COMMING SOON.........</p>
+      {/* Header *
       <div className="bg-brand-teal-deep text-on-dark p-6 flex items-center gap-4">
         <div className="bg-brand-green h-12 w-12 rounded-xl flex items-center justify-center shadow-md">
           <Bot className="h-6 w-6 text-brand-teal-deep" />
@@ -50,7 +51,7 @@ export default function AiAssistantPage() {
         </div>
       </div>
 
-      {/* Chat Area */}
+      {/* Chat Area *=
       <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-surface-soft">
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -84,7 +85,7 @@ export default function AiAssistantPage() {
         )}
       </div>
 
-      {/* Input Area */}
+      {/* Input Area =
       <div className="p-4 bg-canvas border-t border-hairline">
         <form onSubmit={sendMessage} className="relative">
           <input
@@ -103,7 +104,7 @@ export default function AiAssistantPage() {
             <Send className="h-4 w-4" />
           </button>
         </form>
-      </div>
+      </div>*/}
     </div>
   );
 }

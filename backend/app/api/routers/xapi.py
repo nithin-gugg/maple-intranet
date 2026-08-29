@@ -56,9 +56,11 @@ async def initialize_xapi_session(req: XApiInitRequest, db: AsyncSession = Depen
         await db.refresh(attempt)
         
     # 4. Generate stable registration UUID based on the attempt ID
-    # We use a deterministic namespace UUID so that Attempt ID 25 always yields the same UUID
-    # UUID version 5 using a custom namespace (e.g., UUID_URL)
     stable_registration = str(uuid.uuid5(uuid.NAMESPACE_URL, f"urn:lms:attempt:{attempt.id}"))
+    
+    # Save the registration UUID to the attempt
+    attempt.xapi_registration_uuid = stable_registration
+    await db.commit()
     
     return {
         "attempt_id": attempt.id,
@@ -113,36 +115,47 @@ async def post_statement(
     logging.info(f"[xAPI] Registration: {registration_id}")
     logging.info(f"[xAPI] Activity ID: {activity_id}")
 
-    # 3. LRS Storage (Standard-Agnostic)
-    lrs_service = NativeLRSService(db)
-    statement_ids = []
-    try:
-        for stmt in statements:
-            stmt_id = await lrs_service.store_statement(stmt)
-            statement_ids.append(stmt_id)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-    # 4. Standard-Specific Completion Dispatch
-    auth_header = request.headers.get("Authorization")
-    is_cmi5 = False
+    # 3. Generate Statement IDs for spec compliance and create Inbox Events
+    import uuid
+    from app.models.learning import TrackingEventInbox
+    from app.workers.tracking_worker import process_tracking_event
     
-    if auth_header:
-        logging.info("[xAPI] Auth header detected. Trying Cmi5Validator.")
-        try:
-            await Cmi5Validator.process_statements(statements, db, auth_header)
-            is_cmi5 = True
-        except HTTPException as e:
-            if e.status_code == 401:
-                logging.info("[xAPI] Not a CMI5 session, falling back to standard xAPI processing.")
-            else:
-                raise e
-
-    if not is_cmi5:
-        logging.info("[xAPI] Processing pure xAPI completion.")
-        from app.learning.standards.xapi.adapter import XApiAdapter
-        await XApiAdapter.process_statements(statements, db)
-        await db.commit()
+    statement_ids = []
+    
+    for stmt in statements:
+        if "id" not in stmt:
+            stmt["id"] = str(uuid.uuid4())
+        statement_ids.append(stmt["id"])
+        
+    user_id = None
+    if statements and "actor" in statements[0]:
+        actor = statements[0]["actor"]
+        if "account" in actor and "name" in actor["account"]:
+            user_id = actor["account"]["name"]
+        elif "mbox" in actor:
+            user_id = actor["mbox"].replace("mailto:", "")
+            
+    # Fallback to empty string or a dummy id if totally absent, though schema enforces NOT NULL
+    if not user_id:
+        user_id = "unknown_xapi_user"
+        
+    inbox_id = str(uuid.uuid4())
+    inbox_event = TrackingEventInbox(
+        id=inbox_id,
+        user_id=user_id,
+        course_id=None,
+        package_id=None,
+        attempt_id=None,
+        source="XAPI",
+        event_type="STATEMENT",
+        payload=statements,
+        status="received"
+    )
+    db.add(inbox_event)
+    await db.commit()
+    
+    # Enqueue Celery task
+    process_tracking_event.delay(inbox_id)
             
     return statement_ids # xAPI 1.0.3 specification returns an array of statement IDs
 
@@ -153,34 +166,44 @@ async def put_statement(
     statement: Dict[str, Any] = Body(...),
     db: AsyncSession = Depends(get_db)
 ):
-    statement["id"] = statementId
-    
-    lrs_service = NativeLRSService(db)
     try:
-        await lrs_service.store_statement(statement)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        statement["id"] = statementId
         
-    auth_header = request.headers.get("Authorization")
-    is_cmi5 = False
-    
-    if auth_header:
-        try:
-            await Cmi5Validator.process_statements([statement], db, auth_header)
-            is_cmi5 = True
-        except HTTPException as e:
-            if e.status_code == 401:
-                # Not a valid CMI5 session, fallback to standard xAPI
-                logging.info("[xAPI] Not a CMI5 session (or expired), falling back to standard xAPI processing.")
-            else:
-                raise e
-                
-    if not is_cmi5:
-        from app.learning.standards.xapi.adapter import XApiAdapter
-        await XApiAdapter.process_statements([statement], db)
+        import uuid
+        from app.models.learning import TrackingEventInbox
+        from app.workers.tracking_worker import process_tracking_event
+        from fastapi import Response
+        
+        user_id = None
+        actor = statement.get("actor", {})
+        if "account" in actor and "name" in actor["account"]:
+            user_id = actor["account"]["name"]
+        elif "mbox" in actor:
+            user_id = actor["mbox"].replace("mailto:", "")
+            
+        if not user_id:
+            user_id = "unknown_xapi_user"
+        
+        inbox_id = str(uuid.uuid4())
+        inbox_event = TrackingEventInbox(
+            id=inbox_id,
+            user_id=user_id,
+            source="XAPI",
+            event_type="STATEMENT",
+            payload=[statement],
+            status="received"
+        )
+        db.add(inbox_event)
         await db.commit()
         
-    return "", 204
+        process_tracking_event.delay(inbox_id)
+            
+        return Response(status_code=204)
+    except Exception as e:
+        import traceback
+        import logging
+        logging.error(traceback.format_exc())
+        return Response(status_code=500, content="Internal Server Error")
 
 @router.get("/statements")
 async def get_statements(db: AsyncSession = Depends(get_db)):

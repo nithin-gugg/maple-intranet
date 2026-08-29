@@ -197,6 +197,7 @@ export function TopNav() {
 
   const adminLinks = [
     { name: "Admin Dashboard", href: "/admin/analytics" },
+    { name: "Course Tracking", href: "/admin/tracking" },
     { name: "Manage Documents", href: "/admin/documents" },
     { name: "Manage Courses", href: "/admin/courses" },
     { name: "Manage Users", href: "/admin/users" },
@@ -253,36 +254,46 @@ export function TopNav() {
           : "bg-[#1a2530]/100 backdrop-blur-md shadow-lg border-b border-white/10"
       )}
     >
-      {/* Top Black Bar */}
-      <div className="flex h-14 md:h-12 items-center justify-between px-4 md:px-6 gap-2 md:gap-4">
+      {/* Single Unified Navbar */}
+      <div className="flex h-16 items-center justify-between px-4 md:px-6 gap-4">
         
-        {/* Mobile Menu Toggle */}
-        <button 
-          className="md:hidden text-white p-1"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        >
-          {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
+        {/* Left Side: Mobile Menu, Brand, and Nav Items */}
+        <div className="flex items-center gap-4 lg:gap-8">
+          <button 
+            className="md:hidden text-white p-1"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
 
-        <div className="hidden sm:flex items-center text-white font-semibold text-xs md:text-sm whitespace-nowrap">
-          Maple Learning Solutions
+          <Link href="/" className="text-white font-bold text-lg whitespace-nowrap hidden sm:block">
+            Maple
+          </Link>
+          
+          <div className="hidden md:flex items-center gap-4 lg:gap-6">
+            <NavItem title="Home" />
+            <NavItem title="Company Resources" links={companyResources} />
+            <NavItem title="Employee Resources" links={employeeResources} />
+            <NavItem title="Workspaces & Teams" links={workspaces} />
+            {isAdmin && (
+              <NavItem title="Admin" links={adminLinks} />
+            )}
+          </div>
         </div>
-        
-        {/* Search - Desktop */}
-        <div className="relative hidden md:flex w-full max-w-lg items-center">
-          <Search className="absolute left-3 h-4 w-4 text-gray-500" />
-          <input
-            suppressHydrationWarning
-            type="text"
-            placeholder="Search this site"
-            className="h-8 w-full rounded-sm bg-white pl-9 pr-4 text-sm text-black outline-none focus:ring-2 focus:ring-brand-green"
-          />
-        </div>
 
-        {/* Mobile Spacer if Search is hidden */}
-        <div className="flex-1 md:hidden"></div>
+        {/* Right Side: Search and Icons */}
+        <div className="flex items-center gap-2 md:gap-4">
+          <div className="relative hidden lg:flex w-48 xl:w-64 items-center mr-2">
+            <Search className="absolute left-3 h-4 w-4 text-gray-500" />
+            <input
+              suppressHydrationWarning
+              type="text"
+              placeholder="Search this site"
+              className="h-8 w-full rounded-md bg-white/10 border border-white/20 pl-9 pr-4 text-sm text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-[#00dc82] focus:bg-white focus:text-black transition-all"
+            />
+          </div>
 
-        <div className="flex items-center gap-2 md:gap-4 text-white">
+          <div className="flex items-center gap-2 md:gap-4 text-white">
           <button suppressHydrationWarning className="hidden sm:block hover:text-gray-300 transition-colors">
             <HelpCircle className="h-5 w-5" />
           </button>
@@ -359,24 +370,6 @@ export function TopNav() {
             </SignInButton>
           )}
         </div>
-      </div>
-
-      {/* Second Banner Bar */}
-      <div className="flex flex-col justify-end bg-transparent h-14 md:h-15 px-4 md:px-6 relative overflow-visible">
-        <div className="flex items-center gap-4 md:gap-8 pb-2 md:pb-3 mt-auto relative z-10">
-          <h1 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight">
-            THE HUB
-          </h1>
-          
-          <div className="hidden md:flex items-center gap-6 ml-4">
-            <NavItem title="Home" />
-            <NavItem title="Company Resources" links={companyResources} />
-            <NavItem title="Employee Resources" links={employeeResources} />
-            <NavItem title="Workspaces & Teams" links={workspaces} />
-            {isAdmin && (
-              <NavItem title="Admin" links={adminLinks} />
-            )}
-          </div>
         </div>
       </div>
 

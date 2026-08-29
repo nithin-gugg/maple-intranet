@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, FileText, CheckCircle2, AlertCircle, Layout, Archive } from "lucide-react";
+import { useAuth } from "@clerk/nextjs";
 
 export default function NewCoursePage() {
   const router = useRouter();
+  const { getToken } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const [courseType, setCourseType] = useState<"NATIVE" | "SCORM">("NATIVE");
   const [scormFile, setScormFile] = useState<File | null>(null);
@@ -31,6 +33,9 @@ export default function NewCoursePage() {
     setIsUploading(true);
 
     try {
+      const token = await getToken();
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      
       let scorm_package_id = null;
 
       // 1. Upload SCORM Package if provided
@@ -41,6 +46,7 @@ export default function NewCoursePage() {
 
         const uploadRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/learning-packages/upload`, {
           method: "POST",
+          headers, // Include the auth headers
           body: scormData,
         });
 
@@ -58,6 +64,7 @@ export default function NewCoursePage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...headers, // Include auth headers
         },
         body: JSON.stringify({
           title: formData.title,

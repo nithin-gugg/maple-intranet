@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.database import get_db
 from app.models.communication import Announcement, Notification
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_admin
 from pydantic import BaseModel
 import json
 from app.api.routers.websockets import manager
@@ -28,10 +28,8 @@ class AnnouncementCreate(BaseModel):
 async def create_announcement(
     announcement: AnnouncementCreate,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(require_admin)
 ):
-    # Verify Admin Role (Assuming current_user has a role or public_metadata)
-    # For MVP, we proceed
     
     new_announcement = Announcement(
         title=announcement.title,

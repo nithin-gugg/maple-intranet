@@ -25,3 +25,15 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
+
+@app.get("/health/celery")
+async def celery_health_check():
+    from app.core.celery_app import celery_app
+    try:
+        # A lightweight way to check if the broker is reachable
+        # This checks if there are any active queues
+        with celery_app.connection_for_read() as conn:
+            conn.default_channel.queue_declare("celery", passive=True)
+        return {"status": "ok", "broker": "reachable"}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}

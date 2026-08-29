@@ -48,17 +48,56 @@ export default function Scorm2004Player({ packageId, entryPointUrl, userId }: Sc
     const commitData = (isFinish: boolean = false) => {
       if (Object.keys(dirtyKeysRef.current).length === 0 && !isFinish) return;
       
+      const keysToCommit = { ...dirtyKeysRef.current };
       const endpoint = isFinish ? 'finish' : 'commit';
+      const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/scorm/runtime/${endpoint}`;
+      const payload = { attempt_id: attemptId, cmi_data: keysToCommit };
+
+      if (!navigator.onLine) {
+        console.warn("[SCORM 2004] 📴 Offline. Buffering commit to local storage.");
+        import("@/lib/offlineQueue").then(({ OfflineQueue }) => {
+          OfflineQueue.enqueue({
+            url,
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+        });
+      } else {
+        // We use fetch with keepalive for unmount/finish scenarios to ensure it completes
+        fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          keepalive: true
+        }).then((res) => {
+          if (!res.ok) throw new Error("Server responded with error");
+          if (!isFinish) {
+            console.log("[SCORM 2004] 💾 State successfully flushed to LMS backend.");
+          }
+        }).catch(err => {
+          console.error("[SCORM 2004] 🚨 Failed to flush state to LMS backend. Buffering:", err);
+          import("@/lib/offlineQueue").then(({ OfflineQueue }) => {
+            OfflineQueue.enqueue({
+              url,
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+          });
+        });
+      }
       
-      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/scorm/runtime/${endpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ attempt_id: attemptId, cmi_data: dirtyKeysRef.current }),
-        keepalive: true
-      }).catch(console.error);
-      
-      dirtyKeysRef.current = {}; 
+      // Remove the exact keys we just batched from the dirty tracker
+      for (const key of Object.keys(keysToCommit)) {
+          delete dirtyKeysRef.current[key];
+      }
     };
+
+    // Initialize offline listeners
+    import("@/lib/offlineQueue").then(({ OfflineQueue }) => {
+       OfflineQueue.setupListeners();
+    });
 
     // @ts-ignore
     window.API_1484_11 = {

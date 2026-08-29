@@ -36,3 +36,29 @@ async def get_current_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found in local database")
     return user
+
+async def require_admin(
+    user: User = Depends(get_current_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+) -> User:
+    token = credentials.credentials
+    try:
+        unverified_claims = jwt.decode(token, options={"verify_signature": False})
+        
+        # Clerk puts metadata inside either 'publicMetadata' or 'metadata' depending on JWT template
+        meta = unverified_claims.get("metadata", {})
+        if not meta:
+            meta = unverified_claims.get("public_metadata", {})
+            
+        role = meta.get("role")
+        
+        if role not in ["ADMIN", "SUPER_ADMIN"]:
+            print(f"[SECURITY] Unauthorized access attempt by {user.id} to admin API")
+            raise HTTPException(status_code=403, detail="Admin access required")
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        print(f"[SECURITY] JWT parsing failed during admin check for {user.id}: {e}")
+        raise HTTPException(status_code=403, detail="Admin access required")
+        
+    return user

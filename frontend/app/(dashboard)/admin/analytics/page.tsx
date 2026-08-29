@@ -3,17 +3,23 @@
 import { useEffect, useState } from "react";
 import { Users, FileText, PlayCircle, Bot } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
+import { useAuth } from "@clerk/nextjs";
 
 export default function DashboardPage() {
+  const { getToken } = useAuth();
   const [metrics, setMetrics] = useState<any>(null);
   const [completions, setCompletions] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/analytics/metrics`);
-        const data = await res.json();
-        setMetrics(data);
+        const token = await getToken();
+        const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/analytics/metrics`, { headers });
+        if (res.ok) {
+          const data = await res.json();
+          setMetrics(data);
+        }
       } catch (err) {
         console.error("Failed to fetch metrics:", err);
       }
@@ -22,12 +28,19 @@ export default function DashboardPage() {
 
     const fetchCompletions = async () => {
       try {
+        const token = await getToken();
+        const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
         const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/learning/analytics/completions`;
-        const res = await fetch(url);
-        const data = await res.json();
-        setCompletions(data || []);
+        const res = await fetch(url, { headers });
+        if (res.ok) {
+          const data = await res.json();
+          setCompletions(Array.isArray(data) ? data : []);
+        } else {
+          setCompletions([]);
+        }
       } catch (err) {
         console.error("Failed to fetch completions:", err);
+        setCompletions([]);
       }
     };
     fetchCompletions();

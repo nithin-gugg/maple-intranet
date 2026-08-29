@@ -9,6 +9,17 @@ export default clerkMiddleware(async (auth, request) => {
     await auth.protect();
   }
 
+  // Check admin authorization
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    if (!userId) {
+      return Response.redirect(new URL('/sign-in', request.url));
+    }
+    const role = (sessionClaims?.metadata as any)?.role || (sessionClaims?.publicMetadata as any)?.role;
+    if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
+      return Response.redirect(new URL('/unauthorized', request.url));
+    }
+  }
+
   // Check onboarding status for logged-in users
   if (userId) {
     const metadata = sessionClaims?.metadata as { onboarding_completed?: boolean } | undefined;

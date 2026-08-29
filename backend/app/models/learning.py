@@ -96,6 +96,11 @@ class LearningAttempt(Base):
     last_activity_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     
+    # New fields for tracking architecture hardening
+    xapi_registration_uuid: Mapped[Optional[str]] = mapped_column(String(36), index=True)
+    completion_source: Mapped[Optional[str]] = mapped_column(String(50)) # e.g. SCORM_1_2, XAPI, ADMIN
+    completion_reason: Mapped[Optional[str]] = mapped_column(String(100)) # e.g. SCORM_LESSON_STATUS, XAPI_COMPLETED
+    
     course: Mapped[Optional["Course"]] = relationship()
 
 class LearningActivityEvent(Base):
@@ -131,6 +136,27 @@ class RuntimeState(Base):
     cmi_data: Mapped[dict] = mapped_column(JSON, default=dict) # Use JSON for sqlite compatibility in dev, fallback to JSONB in prod
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
+class TrackingEventInbox(Base):
+    __tablename__ = "tracking_event_inbox"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, index=True) # UUID
+    event_id: Mapped[Optional[str]] = mapped_column(String(255), index=True) # SCORM session/xAPI statement id
+    user_id: Mapped[Optional[str]] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    course_id: Mapped[Optional[int]] = mapped_column(ForeignKey("courses.id", ondelete="CASCADE"), index=True)
+    package_id: Mapped[Optional[int]] = mapped_column(ForeignKey("learning_packages.id", ondelete="CASCADE"), index=True)
+    attempt_id: Mapped[Optional[int]] = mapped_column(ForeignKey("learning_attempts.id", ondelete="CASCADE"), index=True)
+    
+    source: Mapped[str] = mapped_column(String(50)) # SCORM_1_2, SCORM_2004, XAPI, SYSTEM, ADMIN
+    event_type: Mapped[str] = mapped_column(String(50)) # e.g. COMMIT, STATEMENT
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    
+    status: Mapped[str] = mapped_column(String(50), default="received") # received, processing, processed, retrying, failed, dead_letter
+    retry_count: Mapped[int] = mapped_column(default=0)
+    last_error: Mapped[Optional[str]] = mapped_column(Text)
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    processed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    
 class ScormRuntimeState(Base):
     __tablename__ = "scorm_runtime_states"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)

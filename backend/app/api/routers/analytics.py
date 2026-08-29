@@ -4,9 +4,9 @@ from sqlalchemy import select, func, or_
 from datetime import datetime, timedelta
 from app.core.database import get_db
 from app.models.learning import LearningAttempt
-from app.models.core import User
+from app.api.deps import require_admin
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_admin)])
 
 @router.get("/metrics")
 async def get_analytics_metrics(

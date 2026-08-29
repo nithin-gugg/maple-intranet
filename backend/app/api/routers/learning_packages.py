@@ -10,7 +10,9 @@ from app.learning.enums import PackageStandard
 from app.learning.services.package_detector import PackageDetector
 from app.standards.scorm.scorm12.extractor import Scorm12Extractor
 
-router = APIRouter()
+from app.api.deps import require_admin
+
+router = APIRouter(dependencies=[Depends(require_admin)])
 detector = PackageDetector()
 
 @router.post("/upload")

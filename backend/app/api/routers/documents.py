@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.database import get_db
 from app.models.document import Document, DocumentCategory
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_admin
 
 router = APIRouter()
 
@@ -52,6 +52,7 @@ class DocumentCreate(BaseModel):
 async def create_document(
     doc_in: DocumentCreate,
     db: AsyncSession = Depends(get_db),
+    current_user = Depends(require_admin)
 ):
     document = Document(
         title=doc_in.title,
@@ -82,7 +83,8 @@ class DocumentUpdate(BaseModel):
 async def update_document(
     document_id: int,
     doc_in: DocumentUpdate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(require_admin)
 ):
     from fastapi import HTTPException
     
@@ -103,7 +105,8 @@ async def update_document(
 @router.delete("/{document_id}", response_model=None)
 async def delete_document(
     document_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(require_admin)
 ):
     from fastapi import HTTPException
     

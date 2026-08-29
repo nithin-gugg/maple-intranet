@@ -36,30 +36,33 @@ class ProgressService:
         db.add(db_event)
 
         # 3. Apply state machine rules to LearningAttempt
+        is_already_completed = attempt.status in ["completed", "passed"]
+
         if event.event_type in ["completed", "passed"]:
-            if event.event_type == "completed":
-                # Do not override passed with completed if already passed
-                if attempt.status != "passed":
+            if not is_already_completed:
+                if event.event_type == "completed":
                     attempt.status = "completed"
-            else:
-                attempt.status = "passed"
-                
-            attempt.progress_percent = 100
-            if not attempt.completed_at:
+                else:
+                    attempt.status = "passed"
+                    
+                attempt.progress_percent = 100
                 attempt.completed_at = event.timestamp
+                attempt.completion_source = event.source_standard
+                attempt.completion_reason = event.event_type
                 
         elif event.event_type == "failed":
-            if attempt.status not in ["completed", "passed"]:
+            if not is_already_completed:
                 attempt.status = "failed"
                 
         elif event.event_type == "progress":
-            if attempt.status not in ["completed", "passed"]:
-                attempt.status = "incomplete"
+            if not is_already_completed:
+                if attempt.status != "failed":
+                    attempt.status = "incomplete"
                 
-            if event.progress_percent is not None:
-                current_progress = attempt.progress_percent or 0
-                if event.progress_percent > current_progress:
-                    attempt.progress_percent = event.progress_percent
+                if event.progress_percent is not None:
+                    current_progress = attempt.progress_percent or 0
+                    if event.progress_percent > current_progress:
+                        attempt.progress_percent = event.progress_percent
 
         if event.score_raw is not None:
             attempt.score = event.score_raw

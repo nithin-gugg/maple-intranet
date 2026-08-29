@@ -25,4 +25,6 @@ api_router.include_router(assignments.router, prefix="/assignments", tags=["assi
 api_router.include_router(news.router, prefix="/news", tags=["news"])
 api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 api_router.include_router(kudos.router, prefix="/kudos", tags=["kudos"])
+from app.api.routers import admin_tracking
+api_router.include_router(admin_tracking.router, prefix="/admin/tracking", tags=["admin_tracking"])
 api_router.include_router(websockets.router, tags=["websockets"])

@@ -61,25 +61,54 @@ export default function Scorm12Player({ packageId, entryPointUrl, userId }: Scor
       console.log(`[TRACE 2] value of cmi.core.lesson_status:`, keysToCommit['cmi.core.lesson_status']);
       console.log(`[TRACE 2] ---------------------------------------------\n`);
 
-      // We use fetch with keepalive for unmount/finish scenarios to ensure it completes
-      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/scorm/runtime/${endpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ attempt_id: attemptId, cmi_data: keysToCommit }),
-        keepalive: true
-      }).then(() => {
-        if (!isFinish) {
-          console.log("[SCORM 1.2] 💾 State successfully flushed to LMS backend.");
-        }
-      }).catch(err => {
-        console.error("[SCORM 1.2] 🚨 Failed to flush state to LMS backend:", err);
-      });
+      const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/scorm/runtime/${endpoint}`;
+      const payload = { attempt_id: attemptId, cmi_data: keysToCommit };
+
+      if (!navigator.onLine) {
+        console.warn("[SCORM 1.2] 📴 Offline. Buffering commit to local storage.");
+        import("@/lib/offlineQueue").then(({ OfflineQueue }) => {
+          OfflineQueue.enqueue({
+            url,
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+        });
+      } else {
+        // We use fetch with keepalive for unmount/finish scenarios to ensure it completes
+        fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          keepalive: true
+        }).then((res) => {
+          if (!res.ok) throw new Error("Server responded with error");
+          if (!isFinish) {
+            console.log("[SCORM 1.2] 💾 State successfully flushed to LMS backend.");
+          }
+        }).catch(err => {
+          console.error("[SCORM 1.2] 🚨 Failed to flush state to LMS backend. Buffering:", err);
+          import("@/lib/offlineQueue").then(({ OfflineQueue }) => {
+            OfflineQueue.enqueue({
+              url,
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+          });
+        });
+      }
       
       // Remove the exact keys we just batched from the dirty tracker
       for (const key of Object.keys(keysToCommit)) {
           delete dirtyKeysRef.current[key];
       }
     };
+    
+    // Initialize offline listeners
+    import("@/lib/offlineQueue").then(({ OfflineQueue }) => {
+       OfflineQueue.setupListeners();
+    });
 
     // @ts-ignore
     window.API = {
