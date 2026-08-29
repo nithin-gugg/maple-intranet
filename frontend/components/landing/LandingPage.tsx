@@ -98,7 +98,12 @@ const DEFAULT_DOCK_ITEMS: DockNavItem[] = [
   }
 ];
 
-export function LandingPage() {
+interface LandingPageProps {
+  isPublic?: boolean;
+  isLoggedIn?: boolean;
+}
+
+export function LandingPage({ isPublic, isLoggedIn }: LandingPageProps) {
   const { user } = useUser();
   const { getToken } = useAuth();
   

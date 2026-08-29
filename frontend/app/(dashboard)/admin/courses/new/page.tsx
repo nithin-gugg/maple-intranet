@@ -34,7 +34,7 @@ export default function NewCoursePage() {
 
     try {
       const token = await getToken();
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
       
       let scorm_package_id = null;
 
