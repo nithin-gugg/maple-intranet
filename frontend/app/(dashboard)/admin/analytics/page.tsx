@@ -121,7 +121,7 @@ export default function DashboardPage() {
             <thead>
               <tr className="border-b border-hairline">
                 <th className="py-3 px-4 font-semibold text-sm text-slate-500">Course Name</th>
-                <th className="py-3 px-4 font-semibold text-sm text-slate-500">User ID</th>
+                <th className="py-3 px-4 font-semibold text-sm text-slate-500">User Name</th>
                 <th className="py-3 px-4 font-semibold text-sm text-slate-500">Status</th>
                 <th className="py-3 px-4 font-semibold text-sm text-slate-500">Progress</th>
                 <th className="py-3 px-4 font-semibold text-sm text-slate-500">Completed At</th>
@@ -131,7 +131,7 @@ export default function DashboardPage() {
               {completions.length > 0 ? completions.map((comp: any, idx: number) => (
                 <tr key={idx} className="border-b border-hairline hover:bg-slate-50/50 transition-colors">
                   <td className="py-3 px-4 font-medium text-ink">{comp.course_title}</td>
-                  <td className="py-3 px-4 text-slate-600">{comp.user_id}</td>
+                  <td className="py-3 px-4 text-slate-600">{comp.user_name || comp.user_id}</td>
                   <td className="py-3 px-4">
                     <span className={`px-2 py-1 text-xs rounded-full font-medium ${
                       comp.status === 'completed' || comp.status === 'passed' 

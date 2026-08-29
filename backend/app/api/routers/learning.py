@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.models.learning import Course, CourseCategory, CourseModule, LearningAttempt, CourseEnrollment, LearningPackage
+from app.models.core import User
 from app.api.deps import get_current_user
 
 router = APIRouter()
@@ -270,11 +271,14 @@ async def get_course_completions(
             Course.id.label("course_id"),
             Course.title.label("course_title"),
             LearningAttempt.user_id,
+            User.first_name,
+            User.last_name,
             LearningAttempt.status,
             LearningAttempt.progress_percent,
             LearningAttempt.completed_at
         )
         .join(LearningAttempt, Course.id == LearningAttempt.course_id)
+        .outerjoin(User, LearningAttempt.user_id == User.id)
         .order_by(Course.id, LearningAttempt.completed_at.desc())
     )
     
@@ -283,10 +287,12 @@ async def get_course_completions(
     
     analytics = []
     for row in rows:
+        user_name = f"{row.first_name} {row.last_name}".strip() if row.first_name else row.user_id
         analytics.append({
             "course_id": row.course_id,
             "course_title": row.course_title,
             "user_id": row.user_id,
+            "user_name": user_name,
             "status": row.status,
             "progress_percent": row.progress_percent,
             "completed_at": row.completed_at.isoformat() if row.completed_at else None

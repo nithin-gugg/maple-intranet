@@ -16,6 +16,8 @@ import { Smartphone, CheckSquare, FileText, PlayCircle, Activity, Layout, Chevro
 import { DockNav, type DockNavItem } from "@/components/ui/dock-nav";
 import AuroraBackground from "@/components/ui/aurora-background";
 import { OurVerticals } from "@/components/landing/OurVerticals";
+import { KudosFeed } from "@/components/kudos/KudosFeed";
+import { useAuth } from "@clerk/nextjs";
 
 const HeroCarousel = () => {
   const images = [
@@ -96,8 +98,33 @@ const DEFAULT_DOCK_ITEMS: DockNavItem[] = [
   }
 ];
 
-export function LandingPage({ isPublic = false, isLoggedIn = false }: { isPublic?: boolean, isLoggedIn?: boolean }) {
+export function LandingPage() {
   const { user } = useUser();
+  const { getToken } = useAuth();
+  
+  const [kudosData, setKudosData] = useState<any[]>([]);
+  const [kudosLoading, setKudosLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchKudos = async () => {
+      try {
+        const token = await getToken();
+        const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/kudos/?limit=3`, {
+          headers
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setKudosData(data);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setKudosLoading(false);
+      }
+    };
+    fetchKudos();
+  }, [getToken]);
   const firstName = user?.firstName || "Guest";
 
   const [directoryStaff, setDirectoryStaff] = useState<any[]>([]);
@@ -542,52 +569,12 @@ export function LandingPage({ isPublic = false, isLoggedIn = false }: { isPublic
               <h2 className="text-2xl font-bold text-slate-900 tracking-tight uppercase">Shout-Outs</h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Shout Out Card 1 */}
-              <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-                <p className="text-sm text-slate-600 mb-4">
-                  <span className="font-bold text-slate-900">Sabina Saatgareeva</span> recognized <span className="font-bold text-slate-900">Mariam Black</span> on Aug 07
-                </p>
-                <div className="flex items-center gap-2 mb-4">
-                  <img src={staff[3].img} className="w-8 h-8 rounded-full" alt="Sabina" />
-                  <span className="text-xl">🎉</span>
-                  <img src={staff[1].img} className="w-8 h-8 rounded-full" alt="Mariam" />
-                </div>
-                <p className="text-sm text-slate-700 italic">
-                  "Thank you for stepping in to support the care team during an especially busy week. Your positivity and teamwork made a real difference!"
-                </p>
-                <div className="mt-4 flex items-center gap-4">
-                  <button suppressHydrationWarning className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-brand-green transition-colors">
-                    <ThumbsUp className="w-4 h-4" /> (0)
-                  </button>
-                </div>
-              </div>
-
-              {/* Shout Out Card 2 */}
-              <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-                <p className="text-sm text-slate-600 mb-4">
-                  <span className="font-bold text-slate-900">Sabina Saatgareeva</span> recognized <span className="font-bold text-slate-900">John Smith</span> on Sep 29
-                </p>
-                <div className="flex items-center gap-2 mb-4">
-                  <img src={staff[3].img} className="w-8 h-8 rounded-full" alt="Sabina" />
-                  <span className="text-xl">🤩</span>
-                  <img src={staff[2].img} className="w-8 h-8 rounded-full" alt="John" />
-                </div>
-                <p className="text-sm text-slate-700 italic">
-                  "John went above and beyond to help a patient and their family navigate their care options. Thank you for putting patients first!"
-                </p>
-                <div className="mt-4 flex items-center gap-4">
-                  <button suppressHydrationWarning className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-brand-green transition-colors">
-                    <ThumbsUp className="w-4 h-4" /> (0)
-                  </button>
-                </div>
-              </div>
-            </div>
+            <KudosFeed kudos={kudosData} isLoading={kudosLoading} />
 
             <div className="mt-6 flex justify-between items-center">
-              <button suppressHydrationWarning className="bg-slate-900 text-white px-6 py-2 rounded-full text-sm font-semibold hover:bg-brand-green hover:text-slate-900 transition-colors">
+              <Link href="/kudos" suppressHydrationWarning className="bg-slate-900 text-white px-6 py-2 rounded-full text-sm font-semibold hover:bg-brand-green hover:text-slate-900 transition-colors inline-block">
                 Give Praise
-              </button>
+              </Link>
             </div>
           </div>
 

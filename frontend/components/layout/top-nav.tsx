@@ -32,6 +32,40 @@ export function TopNav() {
     }
   }, [isSignedIn]);
 
+  const playNotificationSound = () => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // First tone
+      const osc1 = audioCtx.createOscillator();
+      const gainNode1 = audioCtx.createGain();
+      osc1.type = "sine";
+      osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+      gainNode1.gain.setValueAtTime(0, audioCtx.currentTime);
+      gainNode1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.05);
+      gainNode1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+      osc1.connect(gainNode1);
+      gainNode1.connect(audioCtx.destination);
+      osc1.start();
+      osc1.stop(audioCtx.currentTime + 0.5);
+
+      // Second tone
+      const osc2 = audioCtx.createOscillator();
+      const gainNode2 = audioCtx.createGain();
+      osc2.type = "sine";
+      osc2.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+      gainNode2.gain.setValueAtTime(0, audioCtx.currentTime + 0.1);
+      gainNode2.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.15);
+      gainNode2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+      osc2.connect(gainNode2);
+      gainNode2.connect(audioCtx.destination);
+      osc2.start(audioCtx.currentTime + 0.1);
+      osc2.stop(audioCtx.currentTime + 0.8);
+    } catch (e) {
+      console.error("Audio playback failed", e);
+    }
+  };
+
   useEffect(() => {
     if (lastMessage?.type === 'NEW_ANNOUNCEMENT') {
       const newNotification = {
@@ -43,11 +77,31 @@ export function TopNav() {
         created_at: new Date().toISOString()
       };
       setNotifications(prev => [newNotification, ...prev]);
+      playNotificationSound();
       toast('New Announcement', {
         description: lastMessage.data.title,
         action: {
           label: 'View',
           onClick: () => window.location.href = '/announcements'
+        }
+      });
+    } else if (lastMessage?.type === 'NEW_KUDOS') {
+      const newNotification = {
+        id: Date.now(),
+        title: lastMessage.data.title,
+        message: lastMessage.data.message,
+        type: "KUDOS",
+        is_read: false,
+        created_at: new Date().toISOString()
+      };
+      setNotifications(prev => [newNotification, ...prev]);
+      playNotificationSound();
+      toast('🎉 ' + lastMessage.data.title, {
+        description: lastMessage.data.message,
+        duration: 8000,
+        action: {
+          label: 'View',
+          onClick: () => window.location.href = '/kudos'
         }
       });
     }
@@ -132,6 +186,7 @@ export function TopNav() {
     { name: "Learning", href: "/learning" },
     { name: "Employees", href: "/employees" },
     { name: "Calendar", href: "/calendar" },
+    { name: "Kudos & Recognition", href: "/kudos" },
   ];
 
   const workspaces = [
