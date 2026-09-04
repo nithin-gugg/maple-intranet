@@ -20,6 +20,7 @@ export default function EditDocumentPage({ params }: { params: Promise<{ id: str
     title: "",
     description: "",
     main_category: "OFFICIAL", 
+    subcategory: "ONBOARDING",
     department_id: 1, 
     drive_url: "",
     thumbnail_url: "",
