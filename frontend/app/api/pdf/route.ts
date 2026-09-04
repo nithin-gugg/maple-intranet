@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+export const runtime = "edge";
+
 const ALLOWED_DOMAIN = "mapleintranet.lxdguildacademy.com";
 
 export async function GET(req: NextRequest) {
@@ -28,6 +30,10 @@ export async function GET(req: NextRequest) {
     if (range) {
       headers.set("range", range);
     }
+    
+    // Add standard browser headers to bypass CDN bot protection (like Hostinger CDN)
+    headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+    headers.set("Accept", "application/pdf,*/*");
 
     const response = await fetch(pdfUrl, {
       method: "GET",
