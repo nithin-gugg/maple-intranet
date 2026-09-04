@@ -17,16 +17,24 @@ async def get_document_categories(
 
 @router.get("", response_model=None)
 async def get_documents(
-    category_id: int | None = None,
+    main_category: str | None = None,
+    subcategory: str | None = None,
     db: AsyncSession = Depends(get_db),
     # current_user = Depends(get_current_user)
 ):
-    query = select(Document)
-    if category_id:
-        query = query.where(Document.category_id == category_id)
+    from sqlalchemy.orm import selectinload
+    query = select(Document).options(selectinload(Document.category))
+    
+    if main_category or subcategory:
+        query = query.join(Document.category)
+        if main_category:
+            query = query.where(DocumentCategory.main_category == main_category)
+        if subcategory:
+            query = query.where(DocumentCategory.name == subcategory)
     
     result = await db.execute(query)
-    return result.scalars().all()
+    documents = result.scalars().all()
+    return documents
 
 @router.get("/{document_id}", response_model=None)
 async def get_document(
@@ -34,19 +42,35 @@ async def get_document(
     db: AsyncSession = Depends(get_db),
     # current_user = Depends(get_current_user)
 ):
-    result = await db.execute(select(Document).where(Document.id == document_id))
+    from sqlalchemy.orm import selectinload
+    result = await db.execute(
+        select(Document)
+        .options(selectinload(Document.category))
+        .where(Document.id == document_id)
+    )
     return result.scalars().first()
 
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
+from urllib.parse import urlparse
 
 class DocumentCreate(BaseModel):
     title: str
     description: str | None = None
-    category_id: int
+    main_category: str
+    subcategory: str
     department_id: int | None = None
     drive_url: str
+    thumbnail_url: str | None = None
     document_type: str = "DOCUMENT"
     visibility: str = "ALL_EMPLOYEES"
+
+    @validator("drive_url", "thumbnail_url")
+    def validate_url(cls, v):
+        if v:
+            parsed = urlparse(v)
+            if parsed.scheme != "https":
+                raise ValueError("URL must use HTTPS protocol")
+        return v
 
 @router.post("", response_model=None)
 async def create_document(
@@ -54,12 +78,26 @@ async def create_document(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(require_admin)
 ):
+    from fastapi import HTTPException
+    
+    # Resolve and validate category
+    cat_res = await db.execute(
+        select(DocumentCategory).where(
+            DocumentCategory.main_category == doc_in.main_category,
+            DocumentCategory.name == doc_in.subcategory
+        )
+    )
+    category = cat_res.scalars().first()
+    if not category:
+        raise HTTPException(status_code=422, detail="Invalid main category and subcategory combination")
+
     document = Document(
         title=doc_in.title,
         description=doc_in.description,
-        category_id=doc_in.category_id,
+        category_id=category.id,
         department_id=doc_in.department_id,
         drive_url=doc_in.drive_url,
+        thumbnail_url=doc_in.thumbnail_url,
         document_type=doc_in.document_type,
         visibility=doc_in.visibility,
         version="1.0",
@@ -74,10 +112,20 @@ async def create_document(
 class DocumentUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
-    category_id: int | None = None
+    main_category: str | None = None
+    subcategory: str | None = None
     department_id: int | None = None
     drive_url: str | None = None
+    thumbnail_url: str | None = None
     visibility: str | None = None
+
+    @validator("drive_url", "thumbnail_url")
+    def validate_url(cls, v):
+        if v is not None and v != "":
+            parsed = urlparse(v)
+            if parsed.scheme != "https":
+                raise ValueError("URL must use HTTPS protocol")
+        return v
 
 @router.put("/{document_id}", response_model=None)
 async def update_document(
@@ -95,6 +143,28 @@ async def update_document(
         raise HTTPException(status_code=404, detail="Document not found")
         
     update_data = doc_in.dict(exclude_unset=True)
+    
+    # Handle category update
+    if "main_category" in update_data or "subcategory" in update_data:
+        # If updating categories, we need both to validate, or fall back to existing category info
+        cat_result = await db.execute(select(DocumentCategory).where(DocumentCategory.id == document.category_id))
+        current_cat = cat_result.scalars().first()
+        
+        new_main = update_data.pop("main_category", current_cat.main_category if current_cat else None)
+        new_sub = update_data.pop("subcategory", current_cat.name if current_cat else None)
+        
+        cat_res = await db.execute(
+            select(DocumentCategory).where(
+                DocumentCategory.main_category == new_main,
+                DocumentCategory.name == new_sub
+            )
+        )
+        category = cat_res.scalars().first()
+        if not category:
+            raise HTTPException(status_code=422, detail="Invalid main category and subcategory combination")
+            
+        document.category_id = category.id
+
     for field, value in update_data.items():
         setattr(document, field, value)
         

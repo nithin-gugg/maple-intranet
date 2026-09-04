@@ -3,14 +3,35 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Plus, Edit2, Trash2, FileText, Loader2 } from "lucide-react";
+import { useAuth } from "@clerk/nextjs";
 
 export default function AdminDocumentsPage() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mainCategory, setMainCategory] = useState<string>("ALL");
+  const [subCategory, setSubCategory] = useState<string>("ALL");
+  const { getToken } = useAuth();
+
+  const subcategoryOptions = {
+    OFFICIAL: [
+      { value: "ONBOARDING", label: "Onboarding Documents" },
+      { value: "TEAMS_DEPARTMENTS", label: "Teams & Departments" },
+      { value: "ANNOUNCEMENTS_UPDATES", label: "Announcements & Updates" }
+    ],
+    OPERATIONAL: [
+      { value: "SOPS", label: "SOPs" },
+      { value: "WORKFLOWS", label: "Workflows" }
+    ]
+  };
 
   const fetchDocuments = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/documents`);
+      setLoading(true);
+      let url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/documents?`;
+      if (mainCategory !== "ALL") url += `main_category=${mainCategory}&`;
+      if (subCategory !== "ALL") url += `subcategory=${subCategory}&`;
+
+      const res = await fetch(url);
       const data = await res.json();
       setDocuments(data);
     } catch (err) {
@@ -22,12 +43,19 @@ export default function AdminDocumentsPage() {
 
   useEffect(() => {
     fetchDocuments();
-  }, []);
+  }, [mainCategory, subCategory]);
 
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this document?")) return;
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/documents/${id}`, { method: "DELETE" });
+      const token = await getToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/documents/${id}`, { 
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (!res.ok) throw new Error("Failed to delete");
       setDocuments(documents.filter(d => d.id !== id));
     } catch (err) {
       console.error(err);
@@ -51,6 +79,33 @@ export default function AdminDocumentsPage() {
         </Link>
       </div>
 
+      <div className="flex gap-4">
+        <select
+          value={mainCategory}
+          onChange={(e) => {
+            setMainCategory(e.target.value);
+            setSubCategory("ALL");
+          }}
+          className="px-4 py-2 rounded-lg border border-input bg-surface outline-none text-sm"
+        >
+          <option value="ALL">All Categories</option>
+          <option value="OFFICIAL">Official Documents</option>
+          <option value="OPERATIONAL">Operational Documents</option>
+        </select>
+        
+        <select
+          value={subCategory}
+          onChange={(e) => setSubCategory(e.target.value)}
+          className="px-4 py-2 rounded-lg border border-input bg-surface outline-none text-sm"
+          disabled={mainCategory === "ALL"}
+        >
+          <option value="ALL">All Subcategories</option>
+          {mainCategory !== "ALL" && subcategoryOptions[mainCategory as keyof typeof subcategoryOptions].map(sub => (
+            <option key={sub.value} value={sub.value}>{sub.label}</option>
+          ))}
+        </select>
+      </div>
+
       <div className="bg-canvas border border-hairline rounded-xl shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex justify-center p-12">
@@ -61,7 +116,7 @@ export default function AdminDocumentsPage() {
             <thead className="bg-surface border-b border-hairline text-slate-500">
               <tr>
                 <th className="px-6 py-4 font-medium">Title</th>
-                <th className="px-6 py-4 font-medium">Type</th>
+                <th className="px-6 py-4 font-medium">Category</th>
                 <th className="px-6 py-4 font-medium">Version</th>
                 <th className="px-6 py-4 font-medium text-right">Actions</th>
               </tr>
@@ -83,7 +138,11 @@ export default function AdminDocumentsPage() {
                       <span className="font-medium text-ink">{doc.title}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-slate-600">{doc.document_type}</td>
+                  <td className="px-6 py-4 text-slate-600">
+                    <span className="inline-flex items-center rounded-md bg-surface-soft px-2 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-500/10">
+                      {doc.category?.name || "Uncategorized"}
+                    </span>
+                  </td>
                   <td className="px-6 py-4 text-slate-600">v{doc.version}</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">

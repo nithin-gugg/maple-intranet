@@ -3,9 +3,10 @@
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Loader2, PlayCircle, CheckCircle2, RotateCcw, BookOpen } from "lucide-react";
+import { ArrowLeft, Loader2, PlayCircle, CheckCircle2, RotateCcw, BookOpen, FileText } from "lucide-react";
 import LearningPlayer from "@/components/scorm/LearningPlayer";
 import NativeLearningPlayer from "@/components/learning/NativeLearningPlayer";
+import CourseProgressHeader from "@/components/learning/CourseProgressHeader";
 import { useUser, useAuth } from "@clerk/nextjs";
 
 export default function CoursePlayerPage() {
@@ -21,8 +22,10 @@ export default function CoursePlayerPage() {
   const [status, setStatus] = useState("not attempted");
   const [isMarkingComplete, setIsMarkingComplete] = useState(false);
   const [isRestarting, setIsRestarting] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [certificate, setCertificate] = useState<any>(null);
   const { user } = useUser();
-  const { userId } = useAuth();
+  const { userId, getToken } = useAuth();
 
   const handleMarkComplete = async () => {
     if (!userId) return;
@@ -66,6 +69,25 @@ export default function CoursePlayerPage() {
         
         setProgress(data.progress_percent || 0);
         setStatus(data.status || "not attempted");
+        
+        if (data.status === "COMPLETED") {
+          // Fetch certificate if it exists
+          try {
+            const token = await getToken();
+            const certRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/certificates/my`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (certRes.ok) {
+              const certs = await certRes.json();
+              const myCert = certs.find((c: any) => c.course_id === parseInt(id));
+              if (myCert) {
+                setCertificate(myCert);
+              }
+            }
+          } catch (e) {
+            console.error("Failed to fetch certificate", e);
+          }
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -134,9 +156,22 @@ export default function CoursePlayerPage() {
           </p>
           
           <div className="flex flex-col gap-3">
+            {certificate && (
+              <a 
+                href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}${certificate.generated_file_path}`}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full flex items-center justify-center gap-2 py-3 bg-brand-teal text-white font-medium rounded-xl hover:bg-brand-teal-deep transition-colors"
+              >
+                <FileText className="w-5 h-5" /> Download Certificate
+              </a>
+            )}
+            
             <Link 
               href={`/learning/${id}?mode=review`}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-brand-green text-white font-medium rounded-xl hover:bg-brand-teal-deep transition-colors"
+              className={`w-full flex items-center justify-center gap-2 py-3 font-medium rounded-xl transition-colors ${
+                certificate ? 'bg-surface-soft border border-hairline text-slate-700 hover:bg-slate-100' : 'bg-brand-green text-white hover:bg-brand-teal-deep'
+              }`}
             >
               <BookOpen className="w-5 h-5" /> Review Course
             </Link>
@@ -163,41 +198,16 @@ export default function CoursePlayerPage() {
   }
 
   return (
-    <div className="flex flex-col h-full w-full">
-      <div className="flex items-center p-2 sm:p-3 bg-canvas border-b border-hairline flex-shrink-0 z-10 justify-between">
-        <Link href="/learning" className="inline-flex items-center px-3 py-1.5 text-xs font-medium bg-surface hover:bg-surface-soft border border-hairline rounded-md text-slate-600 hover:text-ink transition-colors">
-          <ArrowLeft className="mr-2 h-3.5 w-3.5" />
-          Back to Course
-        </Link>
-        <div className="flex items-center space-x-4">
-          <div className="flex flex-col items-end min-w-[150px] sm:min-w-[200px]">
-            <span className="text-xs font-semibold text-slate-600 mb-1">{progress}% Complete</span>
-            <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-              <div 
-                className="bg-brand-green h-1.5 transition-all duration-500"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-          {progress < 100 && (
-            <button
-              onClick={handleMarkComplete}
-              disabled={isMarkingComplete}
-              className="inline-flex items-center px-3 py-1.5 text-xs font-medium bg-brand-green text-white rounded-md hover:bg-brand-green/90 transition-colors disabled:opacity-50"
-            >
-              {isMarkingComplete ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
-              Mark Completed
-            </button>
-          )}
-          {progress >= 100 && (
-            <div className="inline-flex items-center px-3 py-1.5 text-xs font-medium bg-green-100 text-green-700 rounded-md">
-              Completed
-            </div>
-          )}
-        </div>
-      </div>
+    <div className="flex flex-col h-full w-full relative z-0">
+      <CourseProgressHeader
+        title={course.title}
+        progressPercent={progress}
+        totalLessons={course.course_type === "NATIVE" ? course.modules?.reduce((acc: number, m: any) => acc + (m.lessons?.length || 0), 0) : 0}
+        completedLessons={course.course_type === "NATIVE" ? Math.round((progress / 100) * course.modules?.reduce((acc: number, m: any) => acc + (m.lessons?.length || 0), 0)) : 0}
+        onMenuClick={course.course_type === "NATIVE" ? () => setIsSidebarCollapsed(!isSidebarCollapsed) : undefined}
+      />
 
-      <div className="flex-1 bg-surface relative overflow-hidden">
+      <div className="flex-1 bg-surface relative overflow-hidden flex flex-col h-full">
         {mode === "review" && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-full text-sm font-medium shadow-sm flex items-center gap-2">
             <BookOpen className="w-4 h-4" /> Review Mode: Progress will not be saved.
@@ -205,7 +215,12 @@ export default function CoursePlayerPage() {
         )}
         
         {course.course_type === "NATIVE" ? (
-          <NativeLearningPlayer courseId={course.id} userId={userId || undefined} />
+          <NativeLearningPlayer 
+            courseId={course.id} 
+            userId={userId || undefined} 
+            isSidebarCollapsed={isSidebarCollapsed}
+            setIsSidebarCollapsed={setIsSidebarCollapsed}
+          />
         ) : proxiedUrl && user ? (
           <LearningPlayer 
             packageId={learningPackage.id}

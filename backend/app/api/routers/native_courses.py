@@ -410,7 +410,7 @@ async def complete_lesson(
     # 2. Recalculate CourseEnrollment progress
     modules_res = await db.execute(
         select(CourseModule)
-        .options(selectinload(CourseModule.lessons))
+        .options(selectinload(CourseModule.lessons).selectinload(CourseLesson.content_blocks))
         .where(CourseModule.course_id == course_id)
     )
     modules = modules_res.scalars().all()
@@ -432,7 +432,33 @@ async def complete_lesson(
     completed_required_count = len([p for p in completed_progs if p.lesson_id in all_required_lessons])
     
     new_progress = int((completed_required_count / total_required * 100)) if total_required > 0 else 100
-    new_status = "COMPLETED" if new_progress >= 100 else "IN_PROGRESS"
+    
+    # Check if assessments are passed
+    from app.models.assessment import AssessmentAttempt
+    assessments_passed = True
+    for m in modules:
+        for l in m.lessons:
+            if not l.is_required:
+                continue
+            for b in l.content_blocks:
+                if b.type == "ASSESSMENT" and b.metadata_json.get("assessment_id"):
+                    ass_id = b.metadata_json["assessment_id"]
+                    att_res = await db.execute(select(AssessmentAttempt).where(
+                        AssessmentAttempt.assessment_id == ass_id,
+                        AssessmentAttempt.user_id == req.user_id,
+                        AssessmentAttempt.passed == True
+                    ))
+                    if not att_res.scalars().first():
+                        assessments_passed = False
+                        break
+    
+    if new_progress >= 100 and assessments_passed:
+        new_status = "COMPLETED"
+    else:
+        new_status = "IN_PROGRESS"
+        
+    if new_progress == 100 and not assessments_passed:
+        new_progress = 99 # Keep at 99% until assessment is passed
     
     # Update or create CourseEnrollment
     enroll_res = await db.execute(select(CourseEnrollment).where(
@@ -442,6 +468,7 @@ async def complete_lesson(
     ))
     enrollment = enroll_res.scalars().first()
     
+    is_newly_completed = False
     if not enrollment:
         enrollment = CourseEnrollment(
             course_id=course_id,
@@ -451,11 +478,64 @@ async def complete_lesson(
             completed_at=datetime.datetime.utcnow() if new_status == "COMPLETED" else None
         )
         db.add(enrollment)
+        if new_status == "COMPLETED":
+            is_newly_completed = True
     else:
         enrollment.progress_percent = new_progress
         if new_status == "COMPLETED" and enrollment.status != "COMPLETED":
             enrollment.completed_at = datetime.datetime.utcnow()
+            is_newly_completed = True
         enrollment.status = new_status
+        
+    # Generate certificate if newly completed
+    if is_newly_completed:
+        from app.models.learning import Course
+        from app.models.certificate import CertificateTemplate, Certificate
+        from app.models.core import User
+        import uuid
+        from app.services.certificate_generator import generate_certificate
+        import os
+        
+        c_res = await db.execute(select(Course).where(Course.id == course_id))
+        course = c_res.scalars().first()
+        
+        if course and course.certificate_template_id:
+            # Check if certificate already exists to be safe
+            cert_res = await db.execute(select(Certificate).where(
+                Certificate.course_id == course_id,
+                Certificate.user_id == req.user_id
+            ))
+            if not cert_res.scalars().first():
+                t_res = await db.execute(select(CertificateTemplate).where(CertificateTemplate.id == course.certificate_template_id))
+                template = t_res.scalars().first()
+                
+                u_res = await db.execute(select(User).where(User.id == req.user_id))
+                user = u_res.scalars().first()
+                
+                if template and user:
+                    cert_num = f"CERT-{course_id}-{user.id[:8]}-{uuid.uuid4().hex[:8]}".upper()
+                    out_path = f"static/certificates/generated/{cert_num}.pdf"
+                    
+                    data = {
+                        "employee_name": f"{user.first_name} {user.last_name}".strip(),
+                        "course_name": course.title,
+                        "completion_date": datetime.datetime.utcnow().strftime("%B %d, %Y"),
+                        "certificate_id": cert_num
+                    }
+                    
+                    try:
+                        generate_certificate(template.file_path, out_path, template.config_json, data)
+                        
+                        cert = Certificate(
+                            certificate_number=cert_num,
+                            user_id=req.user_id,
+                            course_id=course_id,
+                            template_id=template.id,
+                            generated_file_path="/" + out_path
+                        )
+                        db.add(cert)
+                    except Exception as e:
+                        print(f"Failed to generate certificate: {e}")
         
     # Also update LearningAttempt to ensure dashboard works seamlessly
     attempt_res = await db.execute(select(LearningAttempt).where(

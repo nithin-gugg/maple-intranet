@@ -41,6 +41,7 @@ async def get_courses(
             "description": c.description,
             "category": {"id": c.category.id, "name": c.category.name} if c.category else None,
             "course_type": c.course_type,
+            "thumbnail_url": c.thumbnail_url,
             "progress_percent": 0,
             "status": "not attempted",
             "score": None,
@@ -101,6 +102,7 @@ async def get_course(
         "description": course.description,
         "category": {"id": course.category.id, "name": course.category.name} if course.category else None,
         "course_type": course.course_type,
+        "thumbnail_url": course.thumbnail_url,
         "modules": [
             {
                 "id": m.id,
@@ -185,10 +187,22 @@ class CourseCreate(BaseModel):
     category_id: int
     learning_package_id: int | None = None
     course_type: str = "SCORM"
+    duration_minutes: int | None = None
+    is_mandatory: bool = False
+    self_enrollment: bool = False
+    settings_json: dict = {}
+    certificate_template_id: int | None = None
 
 class CourseUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
+    category_id: int | None = None
+    duration_minutes: int | None = None
+    is_mandatory: bool | None = None
+    self_enrollment: bool | None = None
+    settings_json: dict | None = None
+    certificate_template_id: int | None = None
+    thumbnail_url: str | None = None
 
 @router.post("/courses", response_model=None)
 async def create_course(
@@ -202,7 +216,12 @@ async def create_course(
         category_id=course_in.category_id,
         created_by="temp_admin_user", # Mock user
         is_published=True,
-        course_type=course_in.course_type
+        course_type=course_in.course_type,
+        duration_minutes=course_in.duration_minutes,
+        is_mandatory=course_in.is_mandatory,
+        self_enrollment=course_in.self_enrollment,
+        settings_json=course_in.settings_json,
+        certificate_template_id=course_in.certificate_template_id
     )
     db.add(course)
     await db.flush() # To get course.id
@@ -238,6 +257,20 @@ async def update_course(
         course.title = course_in.title
     if course_in.description is not None:
         course.description = course_in.description
+    if course_in.category_id is not None:
+        course.category_id = course_in.category_id
+    if course_in.duration_minutes is not None:
+        course.duration_minutes = course_in.duration_minutes
+    if course_in.is_mandatory is not None:
+        course.is_mandatory = course_in.is_mandatory
+    if course_in.self_enrollment is not None:
+        course.self_enrollment = course_in.self_enrollment
+    if course_in.settings_json is not None:
+        course.settings_json = course_in.settings_json
+    if course_in.certificate_template_id is not None:
+        course.certificate_template_id = course_in.certificate_template_id
+    if course_in.thumbnail_url is not None:
+        course.thumbnail_url = course_in.thumbnail_url
         
     await db.commit()
     await db.refresh(course)
@@ -249,6 +282,7 @@ async def delete_course(
     db: AsyncSession = Depends(get_db)
 ):
     from fastapi import HTTPException
+    from sqlalchemy import delete
     
     result = await db.execute(select(Course).where(Course.id == course_id))
     course = result.scalars().first()
@@ -256,7 +290,9 @@ async def delete_course(
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
         
-    await db.delete(course)
+    # Use direct SQL DELETE to avoid MissingGreenlet on ORM lazy-loaded cascades.
+    # Database level ON DELETE CASCADE will handle child records (e.g., Postgres).
+    await db.execute(delete(Course).where(Course.id == course_id))
     await db.commit()
     return {"message": "Course deleted successfully"}
 

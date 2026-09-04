@@ -24,6 +24,11 @@ class Course(Base):
     created_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
     is_published: Mapped[bool] = mapped_column(Boolean, default=False)
     course_type: Mapped[str] = mapped_column(String(50), default="SCORM")
+    certificate_template_id: Mapped[Optional[int]] = mapped_column(ForeignKey("certificate_templates.id", ondelete="SET NULL"))
+    duration_minutes: Mapped[Optional[int]] = mapped_column()
+    is_mandatory: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    self_enrollment: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    settings_json: Mapped[dict] = mapped_column(JSON, default=dict, server_default="{}")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     
     category: Mapped["CourseCategory"] = relationship(back_populates="courses")

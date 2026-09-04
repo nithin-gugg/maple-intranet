@@ -76,3 +76,6 @@ supabase==2.31.0
 eventregistry==9.1
 pytz==2026.3.post1
 isodate==0.6.1
+
+reportlab==5.0.1
+pypdf==6.16.2

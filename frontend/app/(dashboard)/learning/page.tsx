@@ -110,6 +110,21 @@ export default function LearningCatalogPage() {
 
           return (
           <div key={course.id} className="bg-canvas rounded-lg border border-hairline overflow-hidden hover:shadow-subtle transition-shadow group flex flex-col">
+            {/* Thumbnail Image */}
+            <div className="w-full h-40 bg-slate-100 relative overflow-hidden">
+              {course.thumbnail_url ? (
+                <img 
+                  src={course.thumbnail_url.startsWith('http') ? course.thumbnail_url : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}${course.thumbnail_url}`} 
+                  alt={course.title} 
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-slate-300">
+                  <PlayCircle className="w-12 h-12 opacity-50" />
+                </div>
+              )}
+            </div>
+
             <div className="p-6 flex-1 flex flex-col">
               <div className="mb-4">
                 <span className={`inline-block px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase rounded-sm bg-brand-teal text-on-dark`}>

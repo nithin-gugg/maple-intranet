@@ -31,10 +31,13 @@ async def get_tracking_health(db: AsyncSession = Depends(get_db)):
 async def get_all_attempts(db: AsyncSession = Depends(get_db), limit: int = 50, skip: int = 0):
     """Get all learning attempts for the admin course tracking view."""
     from app.models.core import User
+    from app.models.learning import Course, LearningPackage
     
     query = (
-        select(LearningAttempt, User)
+        select(LearningAttempt, User, Course.title.label("course_title"), LearningPackage.title.label("package_title"))
         .outerjoin(User, LearningAttempt.user_id == User.id)
+        .outerjoin(Course, LearningAttempt.course_id == Course.id)
+        .outerjoin(LearningPackage, LearningAttempt.package_id == LearningPackage.id)
         .order_by(LearningAttempt.last_activity_at.desc())
         .offset(skip)
         .limit(limit)
@@ -48,7 +51,9 @@ async def get_all_attempts(db: AsyncSession = Depends(get_db), limit: int = 50, 
             "user_id": a.LearningAttempt.user_id,
             "user_name": f"{a.User.first_name} {a.User.last_name}" if a.User else a.LearningAttempt.user_id,
             "course_id": a.LearningAttempt.course_id,
+            "course_name": a.course_title,
             "package_id": a.LearningAttempt.package_id,
+            "package_name": a.package_title,
             "status": a.LearningAttempt.status,
             "progress_percent": a.LearningAttempt.progress_percent,
             "score": a.LearningAttempt.score,

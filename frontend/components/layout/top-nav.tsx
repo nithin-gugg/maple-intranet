@@ -248,7 +248,7 @@ export function TopNav() {
   return (
     <div 
       className={cn(
-        "flex flex-col w-full flex-shrink-0 z-50 transition-all duration-300",
+        "flex flex-col w-full flex-shrink-0 relative z-[60] transition-all duration-300",
         isHomePage && !isScrolled
           ? "bg-transparent"
           : "bg-[#1a2530]/100 backdrop-blur-md shadow-lg border-b border-white/10"

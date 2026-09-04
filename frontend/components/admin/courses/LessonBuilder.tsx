@@ -26,6 +26,7 @@ import VideoBlockEditor from "./blocks/VideoBlockEditor";
 import ImageBlockEditor from "./blocks/ImageBlockEditor";
 import EmbedBlockEditor from "./blocks/EmbedBlockEditor";
 import QuizBlockEditor from "./blocks/QuizBlockEditor";
+import AssessmentBlockEditor from "./blocks/AssessmentBlockEditor";
 
 export default function LessonBuilder({ lesson, onUpdate }: { lesson: any, onUpdate: () => void }) {
   const [addingBlockType, setAddingBlockType] = useState<string | null>(null);
@@ -146,6 +147,10 @@ export default function LessonBuilder({ lesson, onUpdate }: { lesson: any, onUpd
                 <div className="p-1.5 bg-green-100 text-green-600 rounded-md"><HelpCircle className="w-4 h-4" /></div>
                 <div><div className="font-medium">Quiz</div><div className="text-xs text-slate-500">Add a quick quiz</div></div>
               </button>
+              <button onClick={() => addBlock("ASSESSMENT")} className="flex items-center gap-3 px-3 py-2 hover:bg-brand-green rounded-lg text-sm text-left hover:cursor-pointer">
+                <div className="p-1.5 bg-teal-100 text-teal-600 rounded-md"><HelpCircle className="w-4 h-4" /></div>
+                <div><div className="font-medium">Assessment</div><div className="text-xs text-slate-500">Standalone Assessment</div></div>
+              </button>
             </div>
           )}
         </div>
@@ -199,6 +204,7 @@ function SortableBlock({ id, block, onDelete, onUpdate }: { id: number, block: a
       case "IMAGE": return <ImageBlockEditor block={block} onUpdate={onUpdate} />;
       case "EMBED": return <EmbedBlockEditor block={block} onUpdate={onUpdate} />;
       case "QUIZ": return <QuizBlockEditor block={block} onUpdate={onUpdate} />;
+      case "ASSESSMENT": return <AssessmentBlockEditor block={block} onUpdate={onUpdate} />;
       default: return <div className="p-4 bg-red-50 text-red-500">Unknown block type: {block.type}</div>;
     }
   };
@@ -210,6 +216,7 @@ function SortableBlock({ id, block, onDelete, onUpdate }: { id: number, block: a
       case "IMAGE": return <ImageIcon className="w-4 h-4 text-slate-400" />;
       case "EMBED": return <LinkIcon className="w-4 h-4 text-slate-400" />;
       case "QUIZ": return <HelpCircle className="w-4 h-4 text-slate-400" />;
+      case "ASSESSMENT": return <HelpCircle className="w-4 h-4 text-slate-400" />;
       default: return null;
     }
   };

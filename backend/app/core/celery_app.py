@@ -23,6 +23,8 @@ celery_app.conf.update(
     worker_prefetch_multiplier=1, # Don't prefetch too many tracking events to ensure fair distribution
     task_default_retry_delay=5, # initial retry delay
     task_max_retries=5, # Maximum retries before dead-letter
+    worker_cancel_long_running_tasks_on_connection_loss=True, # Fixes warning about task cancellation on connection loss
+    broker_connection_retry_on_startup=True, # Ensures Celery retries connecting to the broker on startup
 )
 
 # Auto-discover tasks in all installed apps

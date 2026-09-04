@@ -132,7 +132,16 @@ export default function AdminTrackingDashboard() {
                   >
                     <td className="px-4 py-3 font-medium">#{attempt.id} (Run {attempt.attempt_number})</td>
                     <td className="px-4 py-3 font-medium">{attempt.user_name || attempt.user_id}</td>
-                    <td className="px-4 py-3">{attempt.course_id || attempt.package_id}</td>
+                    <td className="px-4 py-3">
+                      {attempt.course_name || attempt.package_name ? (
+                        <div className="flex flex-col">
+                          <span className="font-medium">{attempt.course_name || attempt.package_name}</span>
+                          <span className="text-xs text-muted-foreground">ID: {attempt.course_id || attempt.package_id}</span>
+                        </div>
+                      ) : (
+                        attempt.course_id || attempt.package_id
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       <Badge variant="outline" className="text-xs uppercase">{attempt.standard}</Badge>
                     </td>

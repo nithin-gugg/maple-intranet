@@ -2,14 +2,20 @@
 
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { Bold, Italic, List, ListOrdered, Heading2, Code } from 'lucide-react';
+import TextAlign from '@tiptap/extension-text-align';
+import Link from '@tiptap/extension-link';
+import { Bold, Italic, List, ListOrdered, Heading2, Heading3, Code, Link as LinkIcon, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function TipTapEditor({ block, onUpdate }: { block: any, onUpdate: (data: any) => void }) {
   const [isFocused, setIsFocused] = useState(false);
 
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [
+      StarterKit,
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      Link.configure({ openOnClick: false })
+    ],
     content: block.content || '<p>Start typing...</p>',
     onUpdate: ({ editor }) => {
       onUpdate({ content: editor.getHTML() });
@@ -41,9 +47,16 @@ export default function TipTapEditor({ block, onUpdate }: { block: any, onUpdate
         <button
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-          className={`p-1.5 rounded hover:bg-slate-100 ${editor.isActive('heading') ? 'bg-slate-200 text-ink' : 'text-slate-500'}`}
+          className={`p-1.5 rounded hover:bg-slate-100 ${editor.isActive('heading', { level: 2 }) ? 'bg-slate-200 text-ink' : 'text-slate-500'}`}
         >
           <Heading2 className="w-4 h-4" />
+        </button>
+        <button
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          className={`p-1.5 rounded hover:bg-slate-100 ${editor.isActive('heading', { level: 3 }) ? 'bg-slate-200 text-ink' : 'text-slate-500'}`}
+        >
+          <Heading3 className="w-4 h-4" />
         </button>
         <div className="w-px h-4 bg-slate-300 mx-1" />
         <button
@@ -67,6 +80,43 @@ export default function TipTapEditor({ block, onUpdate }: { block: any, onUpdate
           className={`p-1.5 rounded hover:bg-slate-100 ${editor.isActive('codeBlock') ? 'bg-slate-200 text-ink' : 'text-slate-500'}`}
         >
           <Code className="w-4 h-4" />
+        </button>
+        <div className="w-px h-4 bg-slate-300 mx-1" />
+        <button
+          onMouseDown={(e) => {
+            e.preventDefault();
+            if (editor.isActive('link')) {
+              editor.chain().focus().unsetLink().run();
+            } else {
+              const url = window.prompt('Enter URL');
+              if (url) editor.chain().focus().setLink({ href: url }).run();
+            }
+          }}
+          className={`p-1.5 rounded hover:bg-slate-100 ${editor.isActive('link') ? 'bg-slate-200 text-ink' : 'text-slate-500'}`}
+        >
+          <LinkIcon className="w-4 h-4" />
+        </button>
+        <div className="w-px h-4 bg-slate-300 mx-1" />
+        <button
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => editor.chain().focus().setTextAlign('left').run()}
+          className={`p-1.5 rounded hover:bg-slate-100 ${editor.isActive({ textAlign: 'left' }) ? 'bg-slate-200 text-ink' : 'text-slate-500'}`}
+        >
+          <AlignLeft className="w-4 h-4" />
+        </button>
+        <button
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => editor.chain().focus().setTextAlign('center').run()}
+          className={`p-1.5 rounded hover:bg-slate-100 ${editor.isActive({ textAlign: 'center' }) ? 'bg-slate-200 text-ink' : 'text-slate-500'}`}
+        >
+          <AlignCenter className="w-4 h-4" />
+        </button>
+        <button
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => editor.chain().focus().setTextAlign('right').run()}
+          className={`p-1.5 rounded hover:bg-slate-100 ${editor.isActive({ textAlign: 'right' }) ? 'bg-slate-200 text-ink' : 'text-slate-500'}`}
+        >
+          <AlignRight className="w-4 h-4" />
         </button>
       </div>
       

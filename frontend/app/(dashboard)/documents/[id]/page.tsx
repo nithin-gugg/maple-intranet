@@ -1,13 +1,35 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowLeft, ExternalLink, Maximize, Minimize } from "lucide-react";
 import { use, useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
+import { DocumentsLayout } from "@/components/documents/DocumentsLayout";
+import Link from "next/link";
+
+const MAIN_CATEGORIES = {
+  OFFICIAL: { title: "Official Documents" },
+  OPERATIONAL: { title: "Operational Documents" }
+};
+
+const SUBCATEGORIES: Record<string, string> = {
+  ONBOARDING: "Onboarding Documents",
+  TEAMS_DEPARTMENTS: "Teams & Departments",
+  ANNOUNCEMENTS_UPDATES: "Announcements & Updates",
+  SOPS: "SOPs",
+  WORKFLOWS: "Workflows",
+  UNCATEGORIZED_OFFICIAL: "Uncategorized"
+};
+
+const DocumentViewer = dynamic(() => import("@/components/documents/PDFViewer/index"), {
+  ssr: false,
+  loading: () => <div className="h-[500px] flex items-center justify-center bg-surface-soft rounded-xl border border-hairline animate-pulse">Loading PDF Viewer...</div>
+});
 
 export default function DocumentViewerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
   const [doc, setDoc] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -29,71 +51,74 @@ export default function DocumentViewerPage({ params }: { params: Promise<{ id: s
   }, [id]);
 
   if (loading) {
-    return <div className="p-12 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-brand-green" /></div>;
+    return (
+      <DocumentsLayout>
+        <div className="p-12 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-brand-green" /></div>
+      </DocumentsLayout>
+    );
   }
 
   if (!doc) {
-    return <div className="p-12 text-center text-slate-500">Document not found or you don't have access.</div>;
+    return (
+      <DocumentsLayout>
+        <div className="p-12 text-center text-slate-500">Document not found or you don't have access.</div>
+      </DocumentsLayout>
+    );
   }
 
+  const mainCategory = doc.category?.main_category || "OFFICIAL";
+  const subCategory = doc.category?.name || "UNCATEGORIZED_OFFICIAL";
+  
+  const mainCatTitle = MAIN_CATEGORIES[mainCategory as keyof typeof MAIN_CATEGORIES]?.title || mainCategory;
+  const subCatTitle = SUBCATEGORIES[subCategory] || subCategory;
+
   return (
-    <div className={cn("flex flex-col h-[calc(100vh-6rem)]", isFullscreen && "fixed inset-0 z-50 bg-canvas h-screen w-screen p-6")}>
-      {/* Header */}
-      {!isFullscreen && (
-        <div className="flex items-center justify-between pb-6 border-b border-hairline mb-6 flex-shrink-0">
-          <div>
-            <Link href="/documents" className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-ink mb-2 transition-colors">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Documents
-            </Link>
-            <h1 className="text-heading-2 font-heading tracking-tight text-ink">{doc.title}</h1>
-            <div className="flex items-center gap-4 mt-2 text-sm text-slate-500">
-              <span className="bg-surface px-2 py-1 rounded-md border border-hairline">Dept ID: {doc.department_id}</span>
-              <span className="bg-surface px-2 py-1 rounded-md border border-hairline">Cat ID: {doc.category_id}</span>
-              <span>Version: {doc.version}</span>
-              <span>Last Updated: {new Date(doc.updated_at).toLocaleDateString()}</span>
+    <DocumentsLayout activeMainCategory={mainCategory} activeSubcategory={subCategory}>
+      <div className="pb-8 h-full flex flex-col">
+        
+        {/* Breadcrumbs & Header */}
+        {!isFullscreen && (
+          <div className="mb-6">
+            <div className="text-sm font-medium text-slate-500 mb-3 flex items-center gap-1.5 flex-wrap">
+              <Link href="/documents" className="hover:text-brand-green transition-colors">Documents</Link>
+              <ChevronRight className="h-3.5 w-3.5" />
+              <Link href={`/documents?category=${mainCategory}`} className="hover:text-brand-green transition-colors">
+                {mainCatTitle}
+              </Link>
+              <ChevronRight className="h-3.5 w-3.5" />
+              <Link href={`/documents?category=${mainCategory}&subcategory=${subCategory}`} className="hover:text-brand-green transition-colors">
+                {subCatTitle}
+              </Link>
+              <ChevronRight className="h-3.5 w-3.5" />
+              <span className="text-brand-green truncate max-w-[200px] sm:max-w-xs">{doc.title}</span>
             </div>
+            {/* <h1 className="text-display-sm font-heading tracking-tight text-ink">
+              {doc.title}
+            </h1> */}
           </div>
-
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => setIsFullscreen(true)}
-              className="inline-flex items-center rounded-full bg-surface-soft border border-hairline hover:bg-surface px-6 py-2.5 text-sm font-semibold transition-colors"
-            >
-              Full Screen
-              <Maximize className="ml-2 h-4 w-4" />
-            </button>
-            <a 
-              href={doc.drive_url} 
-              target="_blank" 
-              rel="noreferrer"
-              className="inline-flex items-center rounded-full bg-brand-green text-on-dark hover:bg-brand-green-dark px-6 py-2.5 text-sm font-semibold transition-colors"
-            >
-              Open in Google Drive
-              <ExternalLink className="ml-2 h-4 w-4" />
-            </a>
-          </div>
-        </div>
-      )}
-
-      {/* Viewer / Iframe container */}
-      <div className="flex-1 bg-surface-soft rounded-xl border border-hairline overflow-hidden relative">
-        {isFullscreen && (
-          <button 
-            onClick={() => setIsFullscreen(false)}
-            className="absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full backdrop-blur-sm transition-colors"
-            title="Exit Full Screen"
-          >
-            <Minimize className="h-5 w-5" />
-          </button>
         )}
-        <iframe 
-          src={doc.drive_url} 
-          className="w-full h-full border-0"
-          title={doc.title}
-          allow="autoplay"
-        ></iframe>
+
+        {/* Document Viewer */}
+        <div className="flex-1 min-h-[500px]">
+          <DocumentViewer 
+            url={doc.drive_url} 
+            title={doc.title} 
+            onBack={() => router.back()} 
+            onFullscreenChange={setIsFullscreen}
+          />
+        </div>
+        
+        {/* Metadata Footer */}
+        {!isFullscreen && (
+          <div className="mt-6 text-sm text-slate-500 bg-surface border border-hairline p-4 rounded-xl flex flex-wrap items-center gap-4">
+            <span className="font-medium text-ink">Metadata:</span>
+            <span className="px-2 py-1 rounded-md bg-surface-soft border border-hairline">Dept ID: {doc.department_id}</span>
+            <span className="px-2 py-1 rounded-md bg-surface-soft border border-hairline">Cat ID: {doc.category_id}</span>
+            <span>Version: {doc.version}</span>
+            <span>Last Updated: {new Date(doc.updated_at).toLocaleDateString()}</span>
+          </div>
+        )}
       </div>
-    </div>
+    </DocumentsLayout>
   );
 }

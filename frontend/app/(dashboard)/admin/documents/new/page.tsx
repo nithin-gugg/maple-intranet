@@ -3,9 +3,12 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Link as LinkIcon, Loader2 } from "lucide-react";
+import { useAuth } from "@clerk/nextjs";
+import { detectDocumentUrlType } from "@/lib/documentUtils";
 
 export default function NewDocumentPage() {
   const router = useRouter();
+  const { getToken } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   const [loadingMetadata, setLoadingMetadata] = useState(true);
   const [categories, setCategories] = useState<any[]>([]);
@@ -14,25 +17,44 @@ export default function NewDocumentPage() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    category_id: 1, 
+    main_category: "OFFICIAL", 
+    subcategory: "ONBOARDING",
     department_id: 1, 
     drive_url: "",
+    thumbnail_url: "",
   });
+
+  const subcategoryOptions = {
+    OFFICIAL: [
+      { value: "ONBOARDING", label: "Onboarding Documents" },
+      { value: "TEAMS_DEPARTMENTS", label: "Teams & Departments" },
+      { value: "ANNOUNCEMENTS_UPDATES", label: "Announcements & Updates" }
+    ],
+    OPERATIONAL: [
+      { value: "SOPS", label: "SOPs" },
+      { value: "WORKFLOWS", label: "Workflows" }
+    ]
+  };
+
+  const handleMainCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const main_category = e.target.value as "OFFICIAL" | "OPERATIONAL";
+    setFormData({
+      ...formData,
+      main_category,
+      subcategory: subcategoryOptions[main_category][0].value
+    });
+  };
 
   useEffect(() => {
     const fetchMetadata = async () => {
       try {
-        const [catRes, depRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/documents/categories`),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/departments`)
-        ]);
-        const catData = await catRes.json();
+        const token = await getToken();
+        const headers = { Authorization: `Bearer ${token}` };
+        const depRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/departments`, { headers });
         const depData = await depRes.json();
         
-        setCategories(catData || []);
         setDepartments(depData || []);
         
-        if (catData?.length > 0) setFormData(f => ({...f, category_id: catData[0].id}));
         if (depData?.length > 0) setFormData(f => ({...f, department_id: depData[0].id}));
       } catch (err) {
         console.error("Failed to load metadata", err);
@@ -46,13 +68,21 @@ export default function NewDocumentPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (detectDocumentUrlType(formData.drive_url) === "INVALID") {
+      alert("Invalid document URL. Please provide a valid HTTPS PDF URL or Google Drive preview URL.");
+      return;
+    }
+    
     setIsSaving(true);
 
     try {
+      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/documents`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify(formData),
       });
@@ -74,7 +104,7 @@ export default function NewDocumentPage() {
     <div className="max-w-3xl mx-auto space-y-8 pb-12">
       <div>
         <h1 className="text-display-md font-heading tracking-tight text-ink">Add Document</h1>
-        <p className="mt-2 text-subtitle text-slate-500">Link a new file from Google Drive to the intranet document system.</p>
+        <p className="mt-2 text-subtitle text-slate-500">Link a new PDF or Google Drive file to the intranet document system.</p>
       </div>
 
       <div className="bg-canvas border border-hairline rounded-xl shadow-sm overflow-hidden">
@@ -107,23 +137,31 @@ export default function NewDocumentPage() {
             </div>
             
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Category</label>
-                {loadingMetadata ? (
-                  <div className="w-full px-4 py-2 rounded-lg border border-input bg-surface flex items-center gap-2 text-slate-400">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Loading...
-                  </div>
-                ) : (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Main Category</label>
                   <select 
-                    value={formData.category_id}
-                    onChange={(e) => setFormData({...formData, category_id: parseInt(e.target.value)})}
+                    value={formData.main_category}
+                    onChange={handleMainCategoryChange}
                     className="w-full px-4 py-2 rounded-lg border border-input bg-surface focus:border-brand-green focus:ring-1 focus:ring-brand-green outline-none appearance-none"
                   >
-                    {categories.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
+                    <option value="OFFICIAL">Official Documents</option>
+                    <option value="OPERATIONAL">Operational Documents</option>
+                  </select>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Subcategory</label>
+                  <select 
+                    value={formData.subcategory}
+                    onChange={(e) => setFormData({...formData, subcategory: e.target.value})}
+                    className="w-full px-4 py-2 rounded-lg border border-input bg-surface focus:border-brand-green focus:ring-1 focus:ring-brand-green outline-none appearance-none"
+                  >
+                    {subcategoryOptions[formData.main_category as "OFFICIAL" | "OPERATIONAL"].map(sub => (
+                      <option key={sub.value} value={sub.value}>{sub.label}</option>
                     ))}
                   </select>
-                )}
+                </div>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Department</label>
@@ -147,11 +185,11 @@ export default function NewDocumentPage() {
           </div>
 
           <div className="space-y-4 pt-4">
-            <h3 className="text-heading-6 font-semibold text-ink border-b border-hairline pb-2">Google Drive Integration</h3>
-            <p className="text-sm text-slate-500">Paste the shareable link from Google Drive. Ensure the sharing settings are configured correctly on Drive.</p>
+            <h3 className="text-heading-6 font-semibold text-ink border-b border-hairline pb-2">Document File</h3>
+            <p className="text-sm text-slate-500">Provide a direct link to a PDF file or a shareable link from Google Drive. Ensure the file is publicly accessible.</p>
             
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Google Drive URL <span className="text-red-500">*</span></label>
+              <label className="text-sm font-medium text-slate-700">Document URL <span className="text-red-500">*</span></label>
               <div className="relative">
                 <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
                 <input 
@@ -160,9 +198,24 @@ export default function NewDocumentPage() {
                   value={formData.drive_url}
                   onChange={(e) => setFormData({...formData, drive_url: e.target.value})}
                   className="w-full pl-10 pr-4 py-2 rounded-lg border border-input bg-surface focus:border-brand-green focus:ring-1 focus:ring-brand-green outline-none"
-                  placeholder="https://docs.google.com/document/d/..."
+                  placeholder="Paste PDF URL or Google Drive preview URL"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <label className="text-sm font-medium text-slate-700">Thumbnail Image URL (Optional)</label>
+              <div className="relative">
+                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                <input 
+                  type="url" 
+                  value={formData.thumbnail_url}
+                  onChange={(e) => setFormData({...formData, thumbnail_url: e.target.value})}
+                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-input bg-surface focus:border-brand-green focus:ring-1 focus:ring-brand-green outline-none"
+                  placeholder="Paste an Unsplash image URL (e.g. https://images.unsplash.com/...)"
+                />
+              </div>
+              <p className="text-xs text-slate-500 mt-1">Leave blank to use a default category placeholder.</p>
             </div>
           </div>
 

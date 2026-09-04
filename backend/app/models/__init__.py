@@ -4,3 +4,5 @@ from app.models.learning import Course, CourseCategory, CourseModule, CourseEnro
 from app.models.communication import Event, EventAttendee, Announcement, AnnouncementTarget
 from app.models.ai import AiConversation, AiMessage
 from app.models.kudos import Kudos, KudosReason, KudosPresent
+from app.models.assessment import Assessment, AssessmentQuestion, AssessmentOption, AssessmentAttempt, AssessmentAnswer
+from app.models.certificate import CertificateTemplate, Certificate
