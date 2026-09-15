@@ -45,7 +45,7 @@ export default function AssessmentPlayer({
       }
     };
     fetchAssessment();
-  }, [assessmentId, getToken]);
+  }, [assessmentId, token]);
 
   const startAttempt = async () => {
     try {

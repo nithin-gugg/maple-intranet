@@ -25,7 +25,7 @@ export type OnboardingData = {
 };
 
 export default function OnboardingPage() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const user = session?.user;
   const isLoaded = status !== "loading";
   const isSignedIn = !!session;
@@ -86,7 +86,7 @@ export default function OnboardingPage() {
     };
     
     initOnboarding();
-  }, [isLoaded, isSignedIn, getToken, router]);
+  }, [isLoaded, isSignedIn, token, router]);
 
   const saveProgress = async (nextStep: number, partialData: Partial<OnboardingData>) => {
     setIsSaving(true);
@@ -129,7 +129,7 @@ export default function OnboardingPage() {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (user) {
-        await user.reload();
+        await update();
       }
       setCurrentStep(7); // Show success screen
     } catch (e) {

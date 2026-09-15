@@ -31,7 +31,7 @@ export default function AssessmentBlockEditor({ block, onUpdate }: { block: any,
       }
     };
     fetchAssessments();
-  }, [getToken]);
+  }, [token]);
 
   const handleChange = (assessmentId: string) => {
     onUpdate({

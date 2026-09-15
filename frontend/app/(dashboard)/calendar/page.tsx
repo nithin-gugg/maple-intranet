@@ -20,7 +20,6 @@ export default function CalendarPage() {
   const { data: session, status } = useSession();
   const user = session?.user;
   const isLoaded = status !== "loading";
-  const { data: session } = useSession();
   const token = session?.accessToken;
   const userId = session?.user?.id;
   const [isConnected, setIsConnected] = useState(false);
@@ -29,7 +28,7 @@ export default function CalendarPage() {
   useEffect(() => {
     const checkStatus = async () => {
       if (!user) return;
-      setUserToken(token);
+      setUserToken(token || null);
          try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
         const res = await fetch(`${apiUrl}/api/v1/auth/google/status?user_id=${user.id}`, {
@@ -46,7 +45,7 @@ export default function CalendarPage() {
       }
     };
     checkStatus();
-  }, [user, getToken]);
+  }, [user, token]);
 
   const handleConnectGoogle = () => {
     if (!user) return;

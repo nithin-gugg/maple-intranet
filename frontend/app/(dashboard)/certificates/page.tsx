@@ -38,7 +38,7 @@ export default function MyCertificates() {
       }
     };
     fetchCerts();
-  }, [getToken]);
+  }, [token]);
 
   return (
     <div className="p-8 max-w-6xl mx-auto">

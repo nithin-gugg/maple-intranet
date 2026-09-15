@@ -7,6 +7,7 @@ import { ArrowLeft, Loader2, PlayCircle, CheckCircle2, RotateCcw, BookOpen, File
 import LearningPlayer from "@/components/scorm/LearningPlayer";
 import NativeLearningPlayer from "@/components/learning/NativeLearningPlayer";
 import CourseProgressHeader from "@/components/learning/CourseProgressHeader";
+import { useSession } from "next-auth/react";
 
 export default function CoursePlayerPage() {
   const params = useParams();
@@ -23,10 +24,9 @@ export default function CoursePlayerPage() {
   const [isRestarting, setIsRestarting] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [certificate, setCertificate] = useState<any>(null);
-  const { data: session, status } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const user = session?.user;
-  const isLoaded = status !== "loading";
-  const { data: session } = useSession();
+  const isLoaded = sessionStatus !== "loading";
   const userId = session?.user?.id;
   const token = session?.accessToken;
 

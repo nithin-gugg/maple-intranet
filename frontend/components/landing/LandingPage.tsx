@@ -131,7 +131,7 @@ export function LandingPage({ isPublic, isLoggedIn }: LandingPageProps) {
     };
     fetchKudos();
   }, [token]);
-  const firstName = user?.firstName || "Guest";
+  const firstName = user?.name?.split(' ')[0] || "Guest";
 
   const [directoryStaff, setDirectoryStaff] = useState<any[]>([]);
   const [loadingStaff, setLoadingStaff] = useState(true);

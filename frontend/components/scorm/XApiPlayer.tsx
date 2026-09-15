@@ -15,7 +15,6 @@ export default function XApiPlayer({ packageId, entryPointUrl, userId }: XApiPla
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { data: session } = useSession();
   const token = session?.accessToken;
-  const userId = session?.user?.id;
   const [launchUrl, setLaunchUrl] = useState<string | null>(null);
   const [iframeLoaded, setIframeLoaded] = useState(false);
 
@@ -71,7 +70,7 @@ export default function XApiPlayer({ packageId, entryPointUrl, userId }: XApiPla
     };
 
     fetchLaunchParams();
-  }, [packageId, userId, entryPointUrl, getToken]);
+  }, [packageId, userId, entryPointUrl, token]);
 
   if (!launchUrl) {
     return (

@@ -15,7 +15,6 @@ export default function Cmi5Player({ packageId, entryPointUrl, userId }: Cmi5Pla
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { data: session } = useSession();
   const token = session?.accessToken;
-  const userId = session?.user?.id;
   const [launchUrl, setLaunchUrl] = useState<string | null>(null);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +72,7 @@ export default function Cmi5Player({ packageId, entryPointUrl, userId }: Cmi5Pla
     };
 
     fetchLaunchParams();
-  }, [packageId, userId, entryPointUrl, getToken]);
+  }, [packageId, userId, entryPointUrl, token]);
 
   if (error) {
     return (
