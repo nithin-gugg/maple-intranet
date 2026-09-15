@@ -80,4 +80,5 @@ isodate==0.6.1
 reportlab==5.0.1
 pypdf==6.16.2
 python-jose[cryptography]==3.3.0
+bcrypt==3.2.2
 passlib[bcrypt]==1.7.4
