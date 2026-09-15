@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +19,9 @@ export default function AssessmentPlayer({
   courseId: number,
   onComplete: (passed: boolean) => void 
 }) {
-  const { getToken, userId } = useAuth();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const userId = session?.user?.id;
   const [assessment, setAssessment] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [attemptId, setAttemptId] = useState<number | null>(null);
@@ -30,7 +32,6 @@ export default function AssessmentPlayer({
   useEffect(() => {
     const fetchAssessment = async () => {
       try {
-        const token = await getToken();
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/assessments/${assessmentId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -49,7 +50,6 @@ export default function AssessmentPlayer({
   const startAttempt = async () => {
     try {
       setLoading(true);
-      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/assessments/${assessmentId}/attempt?course_id=${courseId}`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` }
@@ -98,7 +98,6 @@ export default function AssessmentPlayer({
 
     setSubmitting(true);
     try {
-      const token = await getToken();
       const submission = {
         answers: Object.values(answers)
       };

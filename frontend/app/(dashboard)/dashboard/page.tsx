@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { BookOpen, Calendar as CalendarIcon, FileText, ArrowRight, PlayCircle, Clock } from "lucide-react";
 import Link from "next/link";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 
 import { AITrendingNews } from "@/components/home/AITrendingNews";
 
@@ -13,7 +13,9 @@ export default function EmployeeDashboardPage() {
     { id: 2, title: "Security Compliance Training", time: "Friday, 2:00 PM", type: "TRAINING" }
   ];
 
-  const { userId } = useAuth();
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
+  const token = session?.accessToken;
   const [continueLearning, setContinueLearning] = useState<any[]>([]);
 
   useEffect(() => {

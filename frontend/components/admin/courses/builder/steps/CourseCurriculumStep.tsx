@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { GripVertical, Plus, Trash2, Edit2, Loader2, PlaySquare, FileText, Layout, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { useToast } from "@/hooks/use-toast";
 import LessonBuilder from "../../LessonBuilder";
 
 export default function CourseCurriculumStep({ course, onUpdate }: { course: any, onUpdate: () => void }) {
-  const { getToken } = useAuth();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const userId = session?.user?.id;
   const { toast } = useToast();
   
   const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null);
@@ -21,7 +23,6 @@ export default function CourseCurriculumStep({ course, onUpdate }: { course: any
     if (!title) return;
     setAddingLessonToModuleId(moduleId);
     try {
-      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/native-courses/modules/${moduleId}/lessons`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -48,7 +49,6 @@ export default function CourseCurriculumStep({ course, onUpdate }: { course: any
     if (!title) return;
     setIsAddingModule(true);
     try {
-      const token = await getToken();
       await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/native-courses/courses/${course.id}/modules`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },

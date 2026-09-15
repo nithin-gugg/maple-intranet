@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { useToast } from "@/hooks/use-toast";
 
 // Placeholder imports for steps
@@ -25,7 +25,9 @@ const STEPS = [
 
 export default function CourseBuilderWizard({ courseId }: { courseId: string }) {
   const router = useRouter();
-  const { getToken } = useAuth();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const userId = session?.user?.id;
   const { toast } = useToast();
   
   const [currentStep, setCurrentStep] = useState(1);

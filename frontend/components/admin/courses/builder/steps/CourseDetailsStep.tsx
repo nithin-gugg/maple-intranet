@@ -6,13 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import TipTapEditor from "../../blocks/TipTapEditor";
 import { Upload, ImageIcon, Loader2, X } from "lucide-react";
 import { useRef } from "react";
 
 export default function CourseDetailsStep({ course, onUpdate, onNext }: { course: any, onUpdate: () => void, onNext: () => void }) {
-  const { getToken } = useAuth();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const userId = session?.user?.id;
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -28,7 +30,6 @@ export default function CourseDetailsStep({ course, onUpdate, onNext }: { course
 
     setIsUploading(true);
     try {
-      const token = await getToken();
       const formData = new FormData();
       formData.append("file", file);
 
@@ -66,7 +67,6 @@ export default function CourseDetailsStep({ course, onUpdate, onNext }: { course
 
     setIsSaving(true);
     try {
-      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/learning/courses/${course.id}`, {
         method: "PUT",
         headers: {

@@ -5,12 +5,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
 export default function CourseCompletionStep({ course, onUpdate }: { course: any, onUpdate: () => void }) {
-  const { getToken } = useAuth();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const userId = session?.user?.id;
   const { toast } = useToast();
   
   const [isSaving, setIsSaving] = useState(false);
@@ -23,7 +25,6 @@ export default function CourseCompletionStep({ course, onUpdate }: { course: any
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/learning/courses/${course.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },

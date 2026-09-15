@@ -1,10 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import RedirectResponse
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
+from pydantic import BaseModel, EmailStr
 from app.core.database import get_db
-from app.models.core import User
+from app.models.core import User, Employee
+from app.core.security import verify_password, get_password_hash, create_access_token
+import uuid
 import os
 from datetime import datetime, timedelta
 import urllib.parse
@@ -12,6 +15,101 @@ import json
 import base64
 
 router = APIRouter()
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str
+    user: dict
+
+class SignupRequest(BaseModel):
+    email: EmailStr
+    password: str
+    first_name: str
+    last_name: str
+
+@router.post("/login", response_model=TokenResponse)
+async def login(
+    credentials: LoginRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(select(User).where(User.email == credentials.email))
+    user = result.scalars().first()
+
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password",
+        )
+        
+    if not verify_password(credentials.password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password",
+        )
+
+    # Generate token
+    access_token = create_access_token(subject=user.id)
+    
+    # Get user role and onboarding status
+    roles = [user.role]
+    
+    emp_result = await db.execute(select(Employee).where(Employee.id == user.id))
+    employee = emp_result.scalars().first()
+    onboarding_completed = employee.onboarding_completed if employee else False
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "roles": roles,
+            "onboarding_completed": onboarding_completed
+        }
+    }
+
+@router.post("/signup")
+async def signup(
+    user_in: SignupRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(select(User).where(User.email == user_in.email))
+    if result.scalars().first():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A user with this email already exists."
+        )
+    
+    user_id = str(uuid.uuid4())
+    new_user = User(
+        id=user_id,
+        email=user_in.email,
+        password_hash=get_password_hash(user_in.password),
+        first_name=user_in.first_name,
+        last_name=user_in.last_name,
+        is_active=True,
+        email_verified=False
+    )
+    
+    new_employee = Employee(
+        id=user_id,
+        onboarding_completed=False,
+        onboarding_step=1,
+        designation=""
+    )
+    
+    db.add(new_user)
+    db.add(new_employee)
+    
+    await db.commit()
+    
+    return {"message": "User registered successfully", "user_id": user_id}
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")

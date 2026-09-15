@@ -7,7 +7,6 @@ import { ArrowLeft, Loader2, PlayCircle, CheckCircle2, RotateCcw, BookOpen, File
 import LearningPlayer from "@/components/scorm/LearningPlayer";
 import NativeLearningPlayer from "@/components/learning/NativeLearningPlayer";
 import CourseProgressHeader from "@/components/learning/CourseProgressHeader";
-import { useUser, useAuth } from "@clerk/nextjs";
 
 export default function CoursePlayerPage() {
   const params = useParams();
@@ -24,8 +23,12 @@ export default function CoursePlayerPage() {
   const [isRestarting, setIsRestarting] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [certificate, setCertificate] = useState<any>(null);
-  const { user } = useUser();
-  const { userId, getToken } = useAuth();
+  const { data: session, status } = useSession();
+  const user = session?.user;
+  const isLoaded = status !== "loading";
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
+  const token = session?.accessToken;
 
   const handleMarkComplete = async () => {
     if (!userId) return;
@@ -73,7 +76,6 @@ export default function CoursePlayerPage() {
         if (data.status === "COMPLETED") {
           // Fetch certificate if it exists
           try {
-            const token = await getToken();
             const certRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/certificates/my`, {
               headers: { Authorization: `Bearer ${token}` }
             });

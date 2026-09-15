@@ -10,13 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { useToast } from "../../../../../hooks/use-toast";
 import Link from "next/link";
 
 export default function NewAssessment() {
   const router = useRouter();
-  const { getToken } = useAuth();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const userId = session?.user?.id;
   const { toast } = useToast();
   
   const [loading, setLoading] = useState(false);
@@ -98,7 +100,6 @@ export default function NewAssessment() {
     
     setLoading(true);
     try {
-      const token = await getToken();
       
       const payload = {
         ...formData,

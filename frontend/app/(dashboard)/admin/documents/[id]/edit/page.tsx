@@ -3,13 +3,15 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { Link as LinkIcon, Loader2 } from "lucide-react";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { detectDocumentUrlType } from "@/lib/documentUtils";
 
 export default function EditDocumentPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const { id } = use(params);
-  const { getToken } = useAuth();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const userId = session?.user?.id;
   const [isSaving, setIsSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingMetadata, setLoadingMetadata] = useState(true);
@@ -50,7 +52,6 @@ export default function EditDocumentPage({ params }: { params: Promise<{ id: str
   useEffect(() => {
     const fetchMetadata = async () => {
       try {
-        const token = await getToken();
         const headers = { Authorization: `Bearer ${token}` };
         const depRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/departments`, { headers });
         const depData = await depRes.json();
@@ -101,7 +102,6 @@ export default function EditDocumentPage({ params }: { params: Promise<{ id: str
     setIsSaving(true);
 
     try {
-      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/documents/${id}`, {
         method: "PUT",
         headers: { 

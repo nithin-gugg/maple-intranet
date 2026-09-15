@@ -2,19 +2,23 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { UserButton, useUser, SignInButton, useAuth } from "@clerk/nextjs";
 import { Search, Bell, Settings as SettingsIcon, ChevronDown, HelpCircle, Share2, CheckCheck, Loader2, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef } from "react";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 
 export function TopNav() {
   const pathname = usePathname();
-  const { user, isLoaded, isSignedIn } = useUser();
-  const { getToken } = useAuth();
-  const role = user?.publicMetadata?.role as string | undefined;
-  const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
+  const { data: session, status } = useSession();
+  const isLoaded = status !== "loading";
+  const isSignedIn = !!session;
+  const user = session?.user;
+  const token = session?.accessToken;
+  const userId = session?.user?.id;
+  const role = session?.user?.roles?.[0]; // Assuming roles is an array
+  const isAdmin = session?.user?.roles?.includes("admin");
 
   const isHomePage = pathname === "/";
   const [isScrolled, setIsScrolled] = useState(false);
@@ -124,7 +128,6 @@ export function TopNav() {
 
   const fetchNotifications = async () => {
     try {
-      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/notifications`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -141,7 +144,6 @@ export function TopNav() {
   const handleClearAll = async () => {
     setIsClearing(true);
     try {
-      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/notifications/clear`, {
         method: 'POST',
         headers: {
@@ -355,19 +357,11 @@ export function TopNav() {
             )}
           </div>
           {!isLoaded ? null : isSignedIn ? (
-            <UserButton 
-              appearance={{
-                elements: {
-                  avatarBox: "w-7 h-7"
-                }
-              }}
-            />
+            <button onClick={() => require("next-auth/react").signOut()} className="px-3 py-1 bg-red-500 text-white rounded text-sm">Sign Out</button>
           ) : (
-            <SignInButton>
-              <button suppressHydrationWarning className="text-sm font-semibold bg-brand-green text-black px-3 py-1.5 rounded hover:bg-brand-teal transition-colors">
-                Sign In
-              </button>
-            </SignInButton>
+            <Link href="/sign-in" className="text-sm font-semibold bg-brand-green text-black px-3 py-1.5 rounded hover:bg-brand-teal transition-colors">
+              Sign In
+            </Link>
           )}
         </div>
         </div>

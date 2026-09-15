@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useEffect, useState, useRef } from "react";
 import { Loader2 } from "lucide-react";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 
 interface Cmi5PlayerProps {
   packageId: number;
@@ -13,7 +13,9 @@ interface Cmi5PlayerProps {
 
 export default function Cmi5Player({ packageId, entryPointUrl, userId }: Cmi5PlayerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const { getToken } = useAuth();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const userId = session?.user?.id;
   const [launchUrl, setLaunchUrl] = useState<string | null>(null);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +23,6 @@ export default function Cmi5Player({ packageId, entryPointUrl, userId }: Cmi5Pla
   useEffect(() => {
     const fetchLaunchParams = async () => {
       try {
-        const token = await getToken();
         
         let baseUrl = entryPointUrl;
         if (baseUrl && baseUrl.includes('supabase.co')) {

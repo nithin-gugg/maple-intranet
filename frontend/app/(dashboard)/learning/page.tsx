@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { PlayCircle, Clock, Search, ChevronRight, CheckCircle2 } from "lucide-react";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 
 export default function LearningCatalogPage() {
   const categories = [
@@ -12,7 +12,9 @@ export default function LearningCatalogPage() {
     { name: "General Training", tagClass: "bg-brand-green text-on-dark" }
   ];
 
-  const { userId } = useAuth();
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
+  const token = session?.accessToken;
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");

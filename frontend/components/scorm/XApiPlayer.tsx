@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useEffect, useState, useRef } from "react";
 import { Loader2 } from "lucide-react";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 
 interface XApiPlayerProps {
   packageId: number;
@@ -13,14 +13,15 @@ interface XApiPlayerProps {
 
 export default function XApiPlayer({ packageId, entryPointUrl, userId }: XApiPlayerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const { getToken } = useAuth();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const userId = session?.user?.id;
   const [launchUrl, setLaunchUrl] = useState<string | null>(null);
   const [iframeLoaded, setIframeLoaded] = useState(false);
 
   useEffect(() => {
     const fetchLaunchParams = async () => {
       try {
-        const token = await getToken();
         
         let baseUrl = entryPointUrl;
         if (baseUrl && baseUrl.includes('supabase.co')) {

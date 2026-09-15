@@ -3,14 +3,16 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Plus, Edit2, Trash2, FileText, Loader2 } from "lucide-react";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 
 export default function AdminDocumentsPage() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [mainCategory, setMainCategory] = useState<string>("ALL");
   const [subCategory, setSubCategory] = useState<string>("ALL");
-  const { getToken } = useAuth();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const userId = session?.user?.id;
 
   const subcategoryOptions = {
     OFFICIAL: [
@@ -48,7 +50,6 @@ export default function AdminDocumentsPage() {
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this document?")) return;
     try {
-      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/documents/${id}`, { 
         method: "DELETE",
         headers: {

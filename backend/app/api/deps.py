@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.database import get_db
 from app.core.config import settings
-import jwt
+from jose import jwt, JWTError
 from app.models.core import User
 
 security = HTTPBearer()
@@ -12,14 +12,12 @@ security = HTTPBearer()
 async def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
     token = credentials.credentials
     try:
-        # For full verification, we would use Clerk's SDK or JWKS.
-        # Since we just want the sub for internal MVP routing:
-        unverified_claims = jwt.decode(token, options={"verify_signature": False})
-        user_id = unverified_claims.get("sub")
+        payload = jwt.decode(token, settings.AUTH_SECRET, algorithms=["HS256"])
+        user_id = payload.get("sub")
         if not user_id:
             raise HTTPException(status_code=401, detail="Invalid token payload")
         return user_id
-    except jwt.DecodeError:
+    except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
@@ -35,30 +33,29 @@ async def get_current_user(
     user = result.scalars().first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found in local database")
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Inactive user")
     return user
 
 async def require_admin(
     user: User = Depends(get_current_user),
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    db: AsyncSession = Depends(get_db)
 ) -> User:
-    token = credentials.credentials
-    try:
-        unverified_claims = jwt.decode(token, options={"verify_signature": False})
-        
-        # Clerk puts metadata inside either 'publicMetadata' or 'metadata' depending on JWT template
-        meta = unverified_claims.get("metadata", {})
-        if not meta:
-            meta = unverified_claims.get("public_metadata", {})
-            
-        role = meta.get("role")
-        
-        if role not in ["ADMIN", "SUPER_ADMIN"]:
-            print(f"[SECURITY] Unauthorized access attempt by {user.id} to admin API")
-            raise HTTPException(status_code=403, detail="Admin access required")
-    except Exception as e:
-        if isinstance(e, HTTPException):
-            raise e
-        print(f"[SECURITY] JWT parsing failed during admin check for {user.id}: {e}")
+    if user.role != "admin":
+        print(f"[SECURITY] Unauthorized access attempt by {user.id} to admin API")
         raise HTTPException(status_code=403, detail="Admin access required")
         
     return user
+
+def require_permission(resource: str, action: str):
+    async def permission_dependency(
+        user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
+    ) -> User:
+        # In a fully-fledged RBAC we'd check permission tables. 
+        # For now, admin can do everything. Other users are restricted.
+        if user.role != "admin":
+            raise HTTPException(status_code=403, detail="Permission denied")
+                
+        return user
+    return permission_dependency

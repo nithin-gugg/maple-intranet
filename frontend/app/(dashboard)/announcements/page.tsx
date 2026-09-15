@@ -2,13 +2,16 @@
 
 import { Megaphone, AlertCircle, CalendarClock, ChevronRight, Plus, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useUser, useAuth } from "@clerk/nextjs";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 
 export default function AnnouncementsPage() {
-  const { user, isLoaded } = useUser();
-  const { getToken } = useAuth();
+  const { data: session, status } = useSession();
+  const user = session?.user;
+  const isLoaded = status !== "loading";
+  const token = session?.accessToken;
+  const userId = session?.user?.id;
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { lastMessage } = useWebSocket();
@@ -16,8 +19,8 @@ export default function AnnouncementsPage() {
   const [newAnnouncement, setNewAnnouncement] = useState({ title: '', content: '', priority: 'NORMAL' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const role = user?.publicMetadata?.role as string | undefined;
-  const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
+  const role = user?.roles?.[0] as string | undefined;
+  const isAdmin = user?.roles?.includes("admin");
 
   useEffect(() => {
     fetchAnnouncements();
@@ -50,7 +53,6 @@ export default function AnnouncementsPage() {
     
     setIsSubmitting(true);
     try {
-      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/announcements`, {
         method: 'POST',
         headers: { 

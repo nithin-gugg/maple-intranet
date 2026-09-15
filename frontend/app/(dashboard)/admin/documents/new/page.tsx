@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Link as LinkIcon, Loader2 } from "lucide-react";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { detectDocumentUrlType } from "@/lib/documentUtils";
 
 export default function NewDocumentPage() {
   const router = useRouter();
-  const { getToken } = useAuth();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const userId = session?.user?.id;
   const [isSaving, setIsSaving] = useState(false);
   const [loadingMetadata, setLoadingMetadata] = useState(true);
   const [categories, setCategories] = useState<any[]>([]);
@@ -48,7 +50,6 @@ export default function NewDocumentPage() {
   useEffect(() => {
     const fetchMetadata = async () => {
       try {
-        const token = await getToken();
         const headers = { Authorization: `Bearer ${token}` };
         const depRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/departments`, { headers });
         const depData = await depRes.json();
@@ -77,7 +78,6 @@ export default function NewDocumentPage() {
     setIsSaving(true);
 
     try {
-      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/documents`, {
         method: "POST",
         headers: {

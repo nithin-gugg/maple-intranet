@@ -9,17 +9,18 @@ import { Activity, Clock, Server, Info, ListTree, Bug } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 
 export default function AttemptTrackingDetail() {
   const { id } = useParams();
-  const { getToken } = useAuth();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const userId = session?.user?.id;
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
     try {
-      const token = await getToken();
       const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/admin/tracking/attempts/${id}`, { headers });
       if (res.ok) {

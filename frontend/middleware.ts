@@ -1,41 +1,52 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { withAuth } from "next-auth/middleware";
+import { NextResponse } from "next/server";
 
-const isPublicRoute = createRouteMatcher(["/", "/sign-in(.*)", "/sign-up(.*)"]);
-
-export default clerkMiddleware(async (auth, request) => {
-  const { userId, sessionClaims } = await auth();
-
-  if (!isPublicRoute(request)) {
-    await auth.protect();
-  }
-
-  // Check admin authorization
-  if (request.nextUrl.pathname.startsWith('/admin')) {
-    if (!userId) {
-      return Response.redirect(new URL('/sign-in', request.url));
-    }
-    const role = (sessionClaims?.metadata as any)?.role || (sessionClaims?.publicMetadata as any)?.role;
-    if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
-      return Response.redirect(new URL('/unauthorized', request.url));
-    }
-  }
-
-  // Check onboarding status for logged-in users
-  if (userId) {
-    const metadata = sessionClaims?.metadata as { onboarding_completed?: boolean } | undefined;
-    const isOnboarded = metadata?.onboarding_completed === true;
+export default withAuth(
+  function middleware(req) {
+    const { token } = req.nextauth;
+    const { pathname } = req.nextUrl;
     
-    // User is signed in but hasn't completed onboarding, and is not currently on the onboarding page
-    if (!isOnboarded && !request.nextUrl.pathname.startsWith('/onboarding')) {
-      return Response.redirect(new URL('/onboarding', request.url));
-    }
+    const isAuthenticated = !!token;
     
-    // User is signed in and HAS completed onboarding, but tries to visit the onboarding page
-    if (isOnboarded && request.nextUrl.pathname === '/onboarding') {
-      return Response.redirect(new URL('/dashboard', request.url));
+    // Check onboarding status for logged-in users
+    if (isAuthenticated) {
+      const isOnboarded = token?.onboarding_completed === true;
+      
+      // User is signed in but hasn't completed onboarding, and is not currently on the onboarding page
+      if (!isOnboarded && !pathname.startsWith('/onboarding')) {
+        return NextResponse.redirect(new URL('/onboarding', req.url));
+      }
+      
+      // User is signed in and HAS completed onboarding, but tries to visit the onboarding page
+      if (isOnboarded && pathname === '/onboarding') {
+        return NextResponse.redirect(new URL('/dashboard', req.url));
+      }
+
+      // Check admin authorization for frontend
+      if (pathname.startsWith('/admin')) {
+        const roles = (token?.roles as string[]) || [];
+        if (!roles.includes("admin")) {
+          return NextResponse.redirect(new URL('/unauthorized', req.url));
+        }
+      }
+    }
+  },
+  {
+    callbacks: {
+      authorized: ({ token, req }) => {
+        const { pathname } = req.nextUrl;
+        
+        // Public routes
+        if (pathname === "/" || pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up") || pathname.startsWith("/api/v1/auth")) {
+          return true;
+        }
+        
+        // Require authentication for everything else
+        return !!token;
+      }
     }
   }
-});
+);
 
 export const config = {
   matcher: [

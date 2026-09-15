@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, FileText, CheckCircle2, AlertCircle, Layout, Archive } from "lucide-react";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 
 export default function NewCoursePage() {
   const router = useRouter();
-  const { getToken } = useAuth();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const userId = session?.user?.id;
   const [isUploading, setIsUploading] = useState(false);
   const [courseType, setCourseType] = useState<"NATIVE" | "SCORM">("NATIVE");
   const [scormFile, setScormFile] = useState<File | null>(null);
@@ -33,7 +35,6 @@ export default function NewCoursePage() {
     setIsUploading(true);
 
     try {
-      const token = await getToken();
       const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
       
       let scorm_package_id = null;

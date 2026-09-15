@@ -3,18 +3,19 @@
 import { useState } from "react";
 import { Check, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function CourseReviewStep({ course, onUpdate }: { course: any, onUpdate: () => void }) {
-  const { getToken } = useAuth();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const userId = session?.user?.id;
   const { toast } = useToast();
   const [isPublishing, setIsPublishing] = useState(false);
 
   const handlePublish = async () => {
     setIsPublishing(true);
     try {
-      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/native-courses/courses/${course.id}/publish`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -38,7 +39,6 @@ export default function CourseReviewStep({ course, onUpdate }: { course: any, on
   const handleUnpublish = async () => {
     setIsPublishing(true);
     try {
-      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/native-courses/courses/${course.id}/publish`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },

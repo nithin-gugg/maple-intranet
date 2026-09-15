@@ -11,13 +11,12 @@ import {
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { AITrendingNews } from "@/components/home/AITrendingNews";
-import { useUser } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { Smartphone, CheckSquare, FileText, PlayCircle, Activity, Layout, ChevronUp } from "lucide-react";
 import { DockNav, type DockNavItem } from "@/components/ui/dock-nav";
 import AuroraBackground from "@/components/ui/aurora-background";
 import { OurVerticals } from "@/components/landing/OurVerticals";
 import { KudosFeed } from "@/components/kudos/KudosFeed";
-import { useAuth } from "@clerk/nextjs";
 
 const HeroCarousel = () => {
   const images = [
@@ -104,8 +103,11 @@ interface LandingPageProps {
 }
 
 export function LandingPage({ isPublic, isLoggedIn }: LandingPageProps) {
-  const { user } = useUser();
-  const { getToken } = useAuth();
+  const { data: session, status } = useSession();
+  const user = session?.user;
+  const isLoaded = status !== "loading";
+  const token = session?.accessToken;
+  const userId = session?.user?.id;
   
   const [kudosData, setKudosData] = useState<any[]>([]);
   const [kudosLoading, setKudosLoading] = useState(true);
@@ -113,7 +115,6 @@ export function LandingPage({ isPublic, isLoggedIn }: LandingPageProps) {
   useEffect(() => {
     const fetchKudos = async () => {
       try {
-        const token = await getToken();
         const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/kudos/?limit=3`, {
           headers
@@ -129,7 +130,7 @@ export function LandingPage({ isPublic, isLoggedIn }: LandingPageProps) {
       }
     };
     fetchKudos();
-  }, [getToken]);
+  }, [token]);
   const firstName = user?.firstName || "Guest";
 
   const [directoryStaff, setDirectoryStaff] = useState<any[]>([]);

@@ -1,7 +1,7 @@
 import React from "react";
 import { ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
 import { OnboardingData } from "@/app/onboarding/page";
-import { useUser } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 
 interface Props {
   data: OnboardingData;
@@ -11,7 +11,9 @@ interface Props {
 }
 
 export default function ProfileReviewStep({ data, onComplete, onEditStep, isSaving }: Props) {
-  const { user } = useUser();
+  const { data: session, status } = useSession();
+  const user = session?.user;
+  const isLoaded = status !== "loading";
   const email = user?.primaryEmailAddress?.emailAddress || "";
 
   return (

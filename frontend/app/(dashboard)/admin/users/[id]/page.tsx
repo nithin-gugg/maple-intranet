@@ -48,6 +48,27 @@ export default function AdminUserDetailPage() {
     }
   };
 
+  const updateRole = async (newRole: string) => {
+    if (!confirm(`Are you sure you want to change this user's role to ${newRole}?`)) return;
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/assignments/users/${userId}/role`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: newRole })
+      });
+      if (res.ok) {
+        fetchUserData(); // Refresh to show new role
+        alert("Role updated successfully!");
+      } else {
+        const err = await res.json();
+        alert(`Failed to update role: ${err.detail}`);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error updating role.");
+    }
+  };
+
   if (loading) {
     return <div className="p-12 text-center text-slate-500">Loading user details...</div>;
   }
@@ -66,21 +87,39 @@ export default function AdminUserDetailPage() {
           
           <div className="flex justify-between items-end">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-brand-green/10 text-brand-green flex items-center justify-center font-bold text-2xl">
-                U
+              <div className="w-16 h-16 rounded-full bg-brand-green/10 text-brand-green flex items-center justify-center font-bold text-2xl uppercase">
+                {data.user?.first_name?.[0] || 'U'}
               </div>
               <div>
-                <h1 className="text-3xl font-heading font-bold text-ink">User Details</h1>
-                <p className="text-slate-500 mt-1">ID: {userId}</p>
+                <h1 className="text-3xl font-heading font-bold text-ink">
+                  {data.user?.first_name} {data.user?.last_name}
+                </h1>
+                <div className="flex items-center gap-3 mt-1">
+                  <p className="text-slate-500">{data.user?.email || `ID: ${userId}`}</p>
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${data.user?.role === 'admin' ? 'bg-purple-100 text-purple-700 border border-purple-200' : 'bg-blue-100 text-blue-700 border border-blue-200'}`}>
+                    {data.user?.role?.toUpperCase()}
+                  </span>
+                </div>
               </div>
             </div>
             
-            <button 
-              onClick={() => setAssignModalOpen(true)}
-              className="px-5 py-2.5 bg-brand-green text-white font-medium rounded-lg hover:bg-brand-teal-deep transition-colors"
-            >
-              + Assign Course
-            </button>
+            <div className="flex items-center gap-3">
+              <select 
+                value={data.user?.role || 'user'}
+                onChange={(e) => updateRole(e.target.value)}
+                className="px-3 py-2 bg-surface border border-input rounded-lg text-sm focus:outline-none focus:border-brand-green cursor-pointer"
+              >
+                <option value="user">User Role</option>
+                <option value="admin">Admin Role</option>
+              </select>
+
+              <button 
+                onClick={() => setAssignModalOpen(true)}
+                className="px-5 py-2.5 bg-brand-green text-white font-medium rounded-lg hover:bg-brand-teal-deep transition-colors"
+              >
+                + Assign Course
+              </button>
+            </div>
           </div>
         </div>
       </div>

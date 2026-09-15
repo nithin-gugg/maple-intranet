@@ -8,11 +8,13 @@ import { Activity, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw } from "l
 import Link from "next/link";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 
 export default function AdminTrackingDashboard() {
   const router = useRouter();
-  const { getToken } = useAuth();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const userId = session?.user?.id;
   const [health, setHealth] = useState<any>(null);
   const [attempts, setAttempts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,7 +22,6 @@ export default function AdminTrackingDashboard() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const token = await getToken();
       const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
       
       const [healthRes, attemptsRes] = await Promise.all([

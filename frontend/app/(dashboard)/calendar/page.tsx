@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { Loader2, Calendar as CalendarIcon } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useAuth, useUser } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 
 // Dynamically import the Calendar wrapper with SSR disabled 
 // so that FullCalendar plugins don't cause constructor errors during SSR.
@@ -17,15 +17,18 @@ const CalendarWidget = dynamic(() => import("@/components/CalendarWidget"), {
 });
 
 export default function CalendarPage() {
-  const { user } = useUser();
-  const { getToken } = useAuth();
+  const { data: session, status } = useSession();
+  const user = session?.user;
+  const isLoaded = status !== "loading";
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const userId = session?.user?.id;
   const [isConnected, setIsConnected] = useState(false);
   const [userToken, setUserToken] = useState<string | null>(null);
 
   useEffect(() => {
     const checkStatus = async () => {
       if (!user) return;
-      const token = await getToken();
       setUserToken(token);
          try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';

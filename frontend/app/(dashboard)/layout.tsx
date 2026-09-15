@@ -1,7 +1,8 @@
 import { TopNav } from "@/components/layout/top-nav";
 import { MainContent } from "./main-content";
 
-import { auth } from "@clerk/nextjs/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 
 export default async function DashboardLayout({
@@ -9,8 +10,8 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const authState = await auth();
-  const token = await authState.getToken();
+  const session = await getServerSession(authOptions);
+  const token = session?.accessToken;
   
   let needsOnboarding = false;
 

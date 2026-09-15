@@ -3,18 +3,19 @@
 import { useEffect, useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { Loader2 } from "lucide-react";
 
 export default function AssessmentBlockEditor({ block, onUpdate }: { block: any, onUpdate: (data: any) => void }) {
   const [assessments, setAssessments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const { getToken } = useAuth();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const userId = session?.user?.id;
   
   useEffect(() => {
     const fetchAssessments = async () => {
       try {
-        const token = await getToken();
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/assessments`, {
           headers: { Authorization: `Bearer ${token}` }
         });

@@ -1,6 +1,7 @@
+import uuid
 from datetime import datetime
 from typing import List, Optional
-from sqlalchemy import String, Boolean, DateTime, ForeignKey, Text
+from sqlalchemy import String, Boolean, DateTime, ForeignKey, Text, Table, Column
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -15,6 +16,21 @@ class Role(Base):
     users: Mapped[List["User"]] = relationship(
         secondary="user_roles", back_populates="roles"
     )
+    permissions: Mapped[List["Permission"]] = relationship(
+        secondary="role_permissions", back_populates="roles"
+    )
+
+class Permission(Base):
+    __tablename__ = "permissions"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    resource: Mapped[str] = mapped_column(String(100), index=True)
+    action: Mapped[str] = mapped_column(String(100))
+    description: Mapped[Optional[str]] = mapped_column(String(255))
+
+    roles: Mapped[List["Role"]] = relationship(
+        secondary="role_permissions", back_populates="permissions"
+    )
 
 class UserRole(Base):
     __tablename__ = "user_roles"
@@ -22,12 +38,20 @@ class UserRole(Base):
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True)
 
+class RolePermission(Base):
+    __tablename__ = "role_permissions"
+
+    role_id: Mapped[int] = mapped_column(ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True)
+    permission_id: Mapped[int] = mapped_column(ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True)
+
 class User(Base):
     __tablename__ = "users"
 
-    # Clerk user ID as primary key
-    id: Mapped[str] = mapped_column(String(255), primary_key=True, index=True)
+    # UUID default for new users, keeps existing Clerk IDs as strings
+    id: Mapped[str] = mapped_column(String(255), primary_key=True, index=True, default=lambda: str(uuid.uuid4()))
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    password_hash: Mapped[Optional[str]] = mapped_column(String(255))
+    email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     first_name: Mapped[str] = mapped_column(String(100))
     last_name: Mapped[str] = mapped_column(String(100))
     profile_image_url: Mapped[Optional[str]] = mapped_column(String(255))
@@ -37,6 +61,7 @@ class User(Base):
     google_token_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    role: Mapped[str] = mapped_column(String(50), default="user")
 
     roles: Mapped[List["Role"]] = relationship(
         secondary="user_roles", back_populates="users"

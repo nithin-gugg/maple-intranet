@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, Search, Star, Loader2, Gift } from "lucide-react";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -13,7 +13,9 @@ interface GiveKudosModalProps {
 }
 
 export function GiveKudosModal({ isOpen, onClose, onSuccess }: GiveKudosModalProps) {
-  const { getToken } = useAuth();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const userId = session?.user?.id;
   
   const [step, setStep] = useState(1);
   const [employees, setEmployees] = useState<any[]>([]);
@@ -58,7 +60,6 @@ export function GiveKudosModal({ isOpen, onClose, onSuccess }: GiveKudosModalPro
 
   const fetchReasons = async () => {
     try {
-      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/kudos/reasons`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -70,7 +71,6 @@ export function GiveKudosModal({ isOpen, onClose, onSuccess }: GiveKudosModalPro
 
   const fetchPresents = async () => {
     try {
-      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/kudos/presents`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -83,7 +83,6 @@ export function GiveKudosModal({ isOpen, onClose, onSuccess }: GiveKudosModalPro
   const fetchEmployees = async (query: string) => {
     setSearching(true);
     try {
-      const token = await getToken();
       const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/employees/${query ? `?search=${encodeURIComponent(query)}` : ''}`;
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` }
@@ -106,7 +105,6 @@ export function GiveKudosModal({ isOpen, onClose, onSuccess }: GiveKudosModalPro
 
     setIsSubmitting(true);
     try {
-      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/kudos/`, {
         method: "POST",
         headers: {

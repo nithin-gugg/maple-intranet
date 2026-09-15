@@ -1,4 +1,4 @@
-import { ClerkProvider } from "@clerk/nextjs";
+import { AuthProvider } from "@/components/providers/AuthProvider";
 import type { Metadata } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ClerkProvider>
+    <AuthProvider>
       <html
         lang="en"
         className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
@@ -32,6 +32,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Toaster position="bottom-right" richColors />
         </body>
       </html>
-    </ClerkProvider>
+    </AuthProvider>
   );
 }

@@ -50,41 +50,13 @@ async def sync_profile(
     user = result.scalars().first()
     
     if not user:
-        # Create minimal stub. In a real app we might decode the JWT to get email,
-        # but since we just need the relation, we'll create it with empty strings 
-        # for required fields until onboarding updates them.
-        user = User(
-            id=user_id,
-            email=f"{user_id}@placeholder.com",  # Should ideally be extracted from JWT or Clerk webhook
-            first_name="",
-            last_name=""
-        )
-        db.add(user)
+        raise HTTPException(status_code=404, detail="User not found")
         
-        employee = Employee(
-            id=user_id,
-            designation="",
-            onboarding_completed=False,
-            onboarding_step=1
-        )
-        db.add(employee)
-        await db.commit()
-        await db.refresh(user)
-        await db.refresh(employee)
-    else:
-        # User exists, get employee
-        result_emp = await db.execute(select(Employee).where(Employee.id == user_id))
-        employee = result_emp.scalars().first()
-        if not employee:
-            employee = Employee(
-                id=user_id,
-                designation="",
-                onboarding_completed=False,
-                onboarding_step=1
-            )
-            db.add(employee)
-            await db.commit()
-            await db.refresh(employee)
+    result_emp = await db.execute(select(Employee).where(Employee.id == user_id))
+    employee = result_emp.scalars().first()
+    
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee profile not found")
             
     # Get user roles
     roles = []
@@ -161,21 +133,5 @@ async def complete_onboarding(
     employee.onboarding_completed = True
     employee.onboarding_completed_at = datetime.datetime.utcnow()
     await db.commit()
-    
-    # Update Clerk Metadata
-    if settings.CLERK_SECRET_KEY:
-        async with httpx.AsyncClient() as client:
-            try:
-                res = await client.patch(
-                    f"https://api.clerk.com/v1/users/{user_id}/metadata",
-                    headers={
-                        "Authorization": f"Bearer {settings.CLERK_SECRET_KEY}",
-                        "Content-Type": "application/json"
-                    },
-                    json={"public_metadata": {"onboarding_completed": True}}
-                )
-                res.raise_for_status()
-            except Exception as e:
-                print(f"Error updating Clerk metadata: {e}")
                 
     return {"status": "success"}

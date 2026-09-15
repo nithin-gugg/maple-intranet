@@ -5,7 +5,11 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Maple Intranet"
     # Postgres connection string for asyncpg
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/maple_intranet"
-    CLERK_SECRET_KEY: str = ""
+    # Auth & Email Configuration
+    AUTH_SECRET: str = "super_secret_temporary_key_for_dev_only"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7 # 1 week
+    RESEND_API_KEY: str | None = None
+
     GROQ_API_KEY: str | None = None
     SUPABASE_URL: str = ""
     SUPABASE_SERVICE_ROLE_KEY: str = ""

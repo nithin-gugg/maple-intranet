@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth, useUser } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import OnboardingLayout from "@/components/onboarding/OnboardingLayout";
@@ -25,8 +25,11 @@ export type OnboardingData = {
 };
 
 export default function OnboardingPage() {
-  const { getToken, isLoaded, isSignedIn } = useAuth();
-  const { user } = useUser();
+  const { data: session, status } = useSession();
+  const user = session?.user;
+  const isLoaded = status !== "loading";
+  const isSignedIn = !!session;
+  const token = session?.accessToken;
   const router = useRouter();
   
   const [currentStep, setCurrentStep] = useState<number>(0); // 0 means loading/init
@@ -52,7 +55,6 @@ export default function OnboardingPage() {
 
     const initOnboarding = async () => {
       try {
-        const token = await getToken();
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/profile/sync`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -89,7 +91,6 @@ export default function OnboardingPage() {
   const saveProgress = async (nextStep: number, partialData: Partial<OnboardingData>) => {
     setIsSaving(true);
     try {
-      const token = await getToken();
       
       const payload: any = { step: nextStep };
       if (partialData.first_name !== undefined) payload.first_name = partialData.first_name;
@@ -123,7 +124,6 @@ export default function OnboardingPage() {
   const completeOnboarding = async () => {
     setIsSaving(true);
     try {
-      const token = await getToken();
       await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/profile/onboarding/complete`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` }
@@ -154,7 +154,7 @@ export default function OnboardingPage() {
       case 2:
         return <NameStep data={data} onNext={(d) => saveProgress(3, d)} isSaving={isSaving} />;
       case 3:
-        return <WorkInfoStep data={data} onNext={(d) => saveProgress(4, d)} onBack={() => setCurrentStep(2)} isSaving={isSaving} tokenGetter={getToken} />;
+        return <WorkInfoStep data={data} onNext={(d) => saveProgress(4, d)} onBack={() => setCurrentStep(2)} isSaving={isSaving} tokenGetter={async () => token || ""} />;
       case 4:
         return <EmployeeIdStep data={data} onNext={(d) => saveProgress(5, d)} onBack={() => setCurrentStep(3)} isSaving={isSaving} />;
       case 5:

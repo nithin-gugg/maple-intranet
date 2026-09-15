@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Edit2, Clock, FileText } from "lucide-react";
 import Link from "next/link";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useToast } from "../../../../hooks/use-toast";
@@ -14,13 +14,14 @@ import { useToast } from "../../../../hooks/use-toast";
 export default function AdminAssessments() {
   const [assessments, setAssessments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const { getToken } = useAuth();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const userId = session?.user?.id;
   const { toast } = useToast();
   const router = useRouter();
 
   const fetchAssessments = async () => {
     try {
-      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/assessments`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -42,7 +43,6 @@ export default function AdminAssessments() {
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this assessment?")) return;
     try {
-      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/assessments/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` }

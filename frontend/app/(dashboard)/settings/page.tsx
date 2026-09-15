@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { Loader2, Save } from "lucide-react";
 
 export default function SettingsPage() {
-  const { getToken, isLoaded } = useAuth();
+  const { data: session, status } = useSession();
+  const token = session?.accessToken;
+  const isLoaded = status !== "loading";
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -28,7 +30,6 @@ export default function SettingsPage() {
     
     const fetchData = async () => {
       try {
-        const token = await getToken();
         
         // Fetch departments
         const deptRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/departments/`, {
@@ -62,7 +63,7 @@ export default function SettingsPage() {
     };
     
     fetchData();
-  }, [isLoaded, getToken]);
+  }, [isLoaded, token]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -74,7 +75,6 @@ export default function SettingsPage() {
     setSaving(true);
     
     try {
-      const token = await getToken();
       
       const payload: any = {
         step: 7, // Not used for validation anymore, just arbitrary

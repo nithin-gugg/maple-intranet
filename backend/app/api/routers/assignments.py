@@ -51,6 +51,33 @@ async def get_users_with_assignments(db: AsyncSession = Depends(get_db)):
         
     return response
 
+class RoleUpdateRequest(BaseModel):
+    role: str
+
+@router.patch("/users/{user_id}/role")
+async def update_user_role(
+    user_id: str,
+    req: RoleUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Admin-only endpoint to update a user's role."""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can promote users.")
+        
+    if req.role not in ["user", "admin"]:
+        raise HTTPException(status_code=400, detail="Invalid role specified.")
+        
+    result = await db.execute(select(User).where(User.id == user_id))
+    target_user = result.scalars().first()
+    
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found.")
+        
+    target_user.role = req.role
+    await db.commit()
+    return {"message": "User role updated successfully", "role": req.role}
+
 @router.get("/users/{user_id}")
 async def get_user_assignments(user_id: str, db: AsyncSession = Depends(get_db)):
     """Get a specific user's assignments and history."""
@@ -76,7 +103,18 @@ async def get_user_assignments(user_id: str, db: AsyncSession = Depends(get_db))
     attempts_result = await db.execute(attempts_query)
     attempts = attempts_result.scalars().all()
     
+    # 3. Get User Profile
+    user_query = await db.execute(select(User).where(User.id == user_id))
+    user = user_query.scalars().first()
+    
     return {
+        "user": {
+            "id": user.id if user else user_id,
+            "first_name": user.first_name if user else "",
+            "last_name": user.last_name if user else "",
+            "email": user.email if user else "",
+            "role": user.role if user else "user"
+        },
         "assignments": [
             {
                 "id": e.id,

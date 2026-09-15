@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { 
   Home,
   LayoutDashboard, 
@@ -34,9 +34,11 @@ import { useState } from "react";
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { user } = useUser();
-  const role = user?.publicMetadata?.role as string | undefined;
-  const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
+  const { data: session, status } = useSession();
+  const user = session?.user;
+  const isLoaded = status !== "loading";
+  const role = session?.user?.roles?.[0]; // Assuming roles is an array
+  const isAdmin = session?.user?.roles?.includes("admin");
   const [isCollapsed, setIsCollapsed] = useState(true);
 
   return (

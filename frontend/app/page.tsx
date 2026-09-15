@@ -1,10 +1,11 @@
 import { LandingPage } from "@/components/landing/LandingPage";
 import { TopNav } from "@/components/layout/top-nav";
-import { auth } from "@clerk/nextjs/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export default async function Home() {
-  const authState = await auth();
-  const token = await authState.getToken();
+  const session = await getServerSession(authOptions);
+  const token = session?.accessToken;
   
   return (
     <div className="relative flex h-screen flex-col overflow-hidden bg-slate-50">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, Award, Loader2 } from "lucide-react";
 import { format } from "date-fns";
@@ -18,12 +18,13 @@ interface Certificate {
 export default function MyCertificates() {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [loading, setLoading] = useState(true);
-  const { getToken } = useAuth();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const userId = session?.user?.id;
 
   useEffect(() => {
     const fetchCerts = async () => {
       try {
-        const token = await getToken();
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/certificates/my`, {
           headers: { Authorization: `Bearer ${token}` }
         });

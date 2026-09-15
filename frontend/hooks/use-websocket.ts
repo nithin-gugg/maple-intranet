@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useSession } from "next-auth/react";
 
 export function useWebSocket() {
-  const { user } = useUser();
+  const { data: session, status } = useSession();
+  const user = session?.user;
+  const isLoaded = status !== "loading";
   const [lastMessage, setLastMessage] = useState<any>(null);
   const wsRef = useRef<WebSocket | null>(null);
 

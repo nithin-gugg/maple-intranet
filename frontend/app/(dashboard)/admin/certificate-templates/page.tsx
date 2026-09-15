@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2, Edit2, FileText, Upload } from "lucide-react";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { format } from "date-fns";
 import { useToast } from "../../../../hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -14,7 +14,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 export default function CertificateTemplates() {
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const { getToken } = useAuth();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const userId = session?.user?.id;
   const { toast } = useToast();
   
   const [isNewOpen, setIsNewOpen] = useState(false);
@@ -32,7 +34,6 @@ export default function CertificateTemplates() {
 
   const fetchTemplates = async () => {
     try {
-      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/certificates/templates`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -59,7 +60,6 @@ export default function CertificateTemplates() {
     
     setUploading(true);
     try {
-      const token = await getToken();
       const formData = new FormData();
       formData.append("name", newTemplate.name);
       formData.append("file", newTemplate.file);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { Plus } from "lucide-react";
 import { GiveKudosModal } from "@/components/kudos/GiveKudosModal";
 import { KudosFeed } from "@/components/kudos/KudosFeed";
@@ -10,7 +10,9 @@ import { RecognitionStats } from "@/components/kudos/RecognitionStats";
 import { RecognitionLeaderboard } from "@/components/kudos/RecognitionLeaderboard";
 
 export default function KudosPage() {
-  const { getToken } = useAuth();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const userId = session?.user?.id;
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   const [feedData, setFeedData] = useState([]);
@@ -27,7 +29,6 @@ export default function KudosPage() {
 
   const fetchAllData = async () => {
     try {
-      const token = await getToken();
       const headers = { Authorization: `Bearer ${token}` };
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
