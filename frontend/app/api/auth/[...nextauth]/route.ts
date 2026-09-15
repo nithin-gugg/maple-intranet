@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { type NextAuthOptions } from "next-auth";
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET,
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -70,7 +71,8 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/sign-in",
     newUser: "/sign-up",
-  }
+  },
+  debug: process.env.NODE_ENV === "development",
 };
 
 const handler = NextAuth(authOptions);
