@@ -16,7 +16,8 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+        const rawUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+        const backendUrl = rawUrl.replace(/\/$/, "");
 
         try {
           const res = await fetch(`${backendUrl}/api/v1/auth/login`, {
@@ -28,8 +29,14 @@ export const authOptions: NextAuthOptions = {
             headers: { "Content-Type": "application/json" }
           });
 
+          if (!res.ok) {
+            const errText = await res.text();
+            console.error(`Backend login failed. Status: ${res.status}, Body: ${errText}`);
+            return null;
+          }
+
           const data = await res.json();
-          if (res.ok && data.user) {
+          if (data.user) {
             return {
               id: data.user.id,
               email: data.user.email,
@@ -40,7 +47,7 @@ export const authOptions: NextAuthOptions = {
             };
           }
         } catch (error) {
-          console.error("Auth error:", error);
+          console.error("Auth fetch error:", error);
         }
         return null;
       }
