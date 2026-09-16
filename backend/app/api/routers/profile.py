@@ -13,8 +13,8 @@ router = APIRouter()
 
 class ProfileSyncResponse(BaseModel):
     user_id: str
-    first_name: str
-    last_name: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     email: str
     onboarding_completed: bool
     onboarding_step: int
@@ -98,7 +98,7 @@ async def save_onboarding_step(
         user.last_name = data.last_name
         
     if data.employee_id is not None:
-        employee.employee_id = data.employee_id
+        employee.employee_id = data.employee_id if data.employee_id.strip() != "" else None
     if data.designation is not None:
         employee.designation = data.designation
     if data.department_id is not None:

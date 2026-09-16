@@ -130,7 +130,7 @@ export default function OnboardingPage() {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (user) {
-        await update();
+        await update({ onboarding_completed: true });
       }
       setCurrentStep(7); // Show success screen
     } catch (e) {
