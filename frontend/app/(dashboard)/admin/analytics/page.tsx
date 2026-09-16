@@ -6,45 +6,82 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useSession } from "next-auth/react";
 
 export default function DashboardPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const token = session?.accessToken;
   const userId = session?.user?.id;
   const [metrics, setMetrics] = useState<any>(null);
   const [completions, setCompletions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchMetrics = async () => {
-      try {
-        const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/analytics/metrics`, { headers });
-        if (res.ok) {
-          const data = await res.json();
-          setMetrics(data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch metrics:", err);
-      }
-    };
-    fetchMetrics();
+    if (status === "unauthenticated") {
+      setError("Please log in to view analytics.");
+      setLoading(false);
+      return;
+    }
+    
+    if (status !== "authenticated" || !token) return;
 
-    const fetchCompletions = async () => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      
       try {
-        const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
-        const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/learning/analytics/completions`;
-        const res = await fetch(url, { headers });
-        if (res.ok) {
-          const data = await res.json();
-          setCompletions(Array.isArray(data) ? data : []);
+        const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+        
+        const [metricsRes, completionsRes] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/analytics/metrics`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/learning/analytics/completions`, { headers })
+        ]);
+
+        if (!metricsRes.ok) {
+          if (metricsRes.status === 401) throw new Error("Authentication failed. Please log in again.");
+          if (metricsRes.status === 403) throw new Error("You do not have permission to view analytics.");
+          throw new Error("Failed to load metrics data from server.");
+        }
+        
+        const metricsData = await metricsRes.json();
+        setMetrics(metricsData);
+
+        if (completionsRes.ok) {
+          const compData = await completionsRes.json();
+          setCompletions(Array.isArray(compData) ? compData : []);
         } else {
           setCompletions([]);
         }
-      } catch (err) {
-        console.error("Failed to fetch completions:", err);
-        setCompletions([]);
+      } catch (err: any) {
+        console.error("Analytics fetch error:", err);
+        setError(err.message || "An unexpected error occurred while fetching data.");
+      } finally {
+        setLoading(false);
       }
     };
-    fetchCompletions();
-  }, []);
+    
+    fetchData();
+  }, [status, token]);
+
+  if (loading || status === "loading") {
+    return (
+      <div className="min-h-[400px] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-green"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-[400px] flex flex-col items-center justify-center space-y-4">
+        <div className="text-accent-red font-medium">{error}</div>
+        <button 
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-sm font-medium transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   if (!metrics) return null;
 
