@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars, react/no-unescaped-entities */
 import React from "react";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";

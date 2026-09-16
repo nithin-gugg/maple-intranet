@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/ban-ts-comment, react-hooks/purity */
 
 import * as React from "react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";

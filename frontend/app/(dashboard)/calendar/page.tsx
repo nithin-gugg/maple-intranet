@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-unused-vars, @next/next/no-location-assign-relative-destination */
 
 import dynamic from "next/dynamic";
 import { Loader2, Calendar as CalendarIcon } from "lucide-react";

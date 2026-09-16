@@ -46,8 +46,9 @@ export default function AdminTrackingDashboard() {
   };
 
   useEffect(() => {
+    if (!token) return;
     fetchData();
-  }, []);
+  }, [token]);
 
   return (
     <div className="p-8 space-y-6 max-w-7xl mx-auto">

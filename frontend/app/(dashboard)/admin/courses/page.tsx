@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Plus, Trash2, GraduationCap, Loader2, Edit2 } from "lucide-react";
 
 export default function AdminCoursesPage() {
+  const { data: session } = useSession();
+  const token = session?.accessToken;
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -27,7 +30,7 @@ export default function AdminCoursesPage() {
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this course? This will also remove any attached SCORM packages.")) return;
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/learning/courses/${id}`, { method: "DELETE" });
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/learning/courses/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       setCourses(courses.filter(c => c.id !== id));
     } catch (err) {
       console.error(err);
@@ -41,7 +44,7 @@ export default function AdminCoursesPage() {
     try {
       await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/learning/courses/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ title: newTitle })
       });
       fetchCourses();

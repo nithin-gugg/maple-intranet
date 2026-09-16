@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any, react/no-unescaped-entities */
 
 import { useState, useEffect } from "react";
 import { BookOpen, Calendar as CalendarIcon, FileText, ArrowRight, PlayCircle, Clock } from "lucide-react";

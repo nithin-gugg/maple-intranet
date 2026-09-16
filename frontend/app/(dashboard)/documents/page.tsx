@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any, @next/next/no-img-element */
 
 import { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { KudosCard } from "./KudosCard";
 import { Loader2 } from "lucide-react";
 

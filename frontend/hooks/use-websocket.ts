@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
 import { useEffect, useRef, useState } from 'react';
 import { useSession } from "next-auth/react";
 

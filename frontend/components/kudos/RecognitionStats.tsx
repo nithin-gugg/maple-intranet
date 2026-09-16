@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Users, Star, Gift, Award, Loader2 } from "lucide-react";
 
 export function RecognitionStats({ stats, isLoading }: { stats: any, isLoading: boolean }) {

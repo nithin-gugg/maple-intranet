@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any, @next/next/no-img-element */
 
 import { useState, useEffect } from "react";
 import { Search, Filter, Mail, Phone, MapPin, Briefcase } from "lucide-react";

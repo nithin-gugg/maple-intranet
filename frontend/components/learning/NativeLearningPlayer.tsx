@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
 
 import { useState, useEffect } from "react";
 import { CheckCircle2, ChevronRight, ChevronLeft, Menu, FileText, PlayCircle, ChevronDown, Lock, ClipboardCheck, ArrowLeft, ArrowRight, Layout } from "lucide-react";

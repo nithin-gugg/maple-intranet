@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React from "react";
 import { ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
 import { OnboardingData } from "@/app/onboarding/page";

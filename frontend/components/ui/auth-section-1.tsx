@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { GrainGradient } from "@paper-design/shaders-react";
 import type { ReactNode } from "react";

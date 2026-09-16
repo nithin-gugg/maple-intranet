@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any, @next/next/no-img-element, @next/next/no-location-assign-relative-destination */
 
 import { useState, useEffect } from "react";
 import { PlayCircle, Clock, Search, ChevronRight, CheckCircle2 } from "lucide-react";

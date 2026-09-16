@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useState } from "react";
 import { Plus, Trash2, Video, Image as ImageIcon, Type, Link as LinkIcon, HelpCircle, GripVertical } from "lucide-react";

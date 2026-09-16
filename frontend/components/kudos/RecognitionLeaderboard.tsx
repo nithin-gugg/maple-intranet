@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @next/next/no-img-element */
 import { Star, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 

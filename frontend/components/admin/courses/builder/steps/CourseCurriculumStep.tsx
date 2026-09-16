@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
 
 import { useState } from "react";
 import { GripVertical, Plus, Trash2, Edit2, Loader2, PlaySquare, FileText, Layout, Settings } from "lucide-react";

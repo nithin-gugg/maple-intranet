@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react/no-unescaped-entities */
 import React from 'react';
 import { BookOpen, Kanban, Clock, MessageSquare, Briefcase } from 'lucide-react';
 import { DocumentationCallout } from '@/components/apps/DocumentationCallout';

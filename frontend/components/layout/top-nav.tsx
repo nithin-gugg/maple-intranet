@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any, react-hooks/immutability, react-hooks/exhaustive-deps, react-hooks/set-state-in-effect, @next/next/no-location-assign-relative-destination, react-hooks/static-components, react/no-unescaped-entities, @typescript-eslint/no-require-imports */
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";

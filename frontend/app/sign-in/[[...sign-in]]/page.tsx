@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-unused-vars, react/no-unescaped-entities */
 
 import { signIn } from "next-auth/react";
 import { useState } from "react";

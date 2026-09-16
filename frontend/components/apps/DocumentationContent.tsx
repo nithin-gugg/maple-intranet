@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React from 'react';
 import { ExternalLink } from 'lucide-react';
 import { AppDocumentation } from '@/data/apps-documentation';

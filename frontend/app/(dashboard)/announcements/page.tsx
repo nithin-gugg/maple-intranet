@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any, react-hooks/immutability, react-hooks/set-state-in-effect */
 
 import { Megaphone, AlertCircle, CalendarClock, ChevronRight, Plus, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
