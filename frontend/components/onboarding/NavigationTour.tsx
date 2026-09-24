@@ -118,12 +118,29 @@ export const startNavigationTour = (updateSession?: any) => {
         }
       },
       {
-        element: '[data-tour="nav-help"]',
+        element: () => {
+          if (window.innerWidth >= 1024 && window.innerWidth < 1280) {
+            return document.querySelector('#more-nav-help') as Element;
+          }
+          return document.querySelector('[data-tour="nav-help"]') as Element;
+        },
         popover: {
           title: "Help & Support",
           description: "Hover here to find admin contact details if you ever need assistance.",
           side: "bottom",
           align: "end"
+        },
+        onHighlightStarted: (element) => {
+          const dropdown = document.getElementById('more-nav-dropdown');
+          if (dropdown && window.innerWidth >= 1024 && window.innerWidth < 1280) {
+            dropdown.style.display = 'flex';
+          }
+        },
+        onDeselected: (element) => {
+          const dropdown = document.getElementById('more-nav-dropdown');
+          if (dropdown) {
+            dropdown.style.display = '';
+          }
         }
       },
       {

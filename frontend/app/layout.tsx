@@ -17,6 +17,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Maple Intranet",
   description: "Company Intranet Platform",
+  icons: {
+    icon: "/maple-icon.ico",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

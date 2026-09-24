@@ -14,7 +14,7 @@ const verticals = [
     title: "Maple Learning Solutions",
     description: "AI-powered eLearning company in India & UAE, building custom learning content and digital training programs for global workforces.",
     image: "/maple.webp",
-    href: "/verticals/maple-learning-solutions"
+    href: "https://www.maplelearningsolutions.com/"
   },
   {
     id: "lxdguild",
@@ -22,7 +22,7 @@ const verticals = [
     title: "LXDGUILD & Academy",
     description: "India's largest L&D community with 8000+ followers, connecting learning experience designers and running academy programs.",
     image: "/lxdguild.webp",
-    href: "/verticals/lxdguild"
+    href: "https://lxdguild.com/"
   },
   {
     id: "maple-web-works",
@@ -30,7 +30,7 @@ const verticals = [
     title: "Maple Web Works",
     description: "Modern, high-performance web design and development for brands that need a fast, polished digital presence.",
     image: "/mapleweb.webp",
-    href: "/verticals/maple-web-works"
+    href: "https://maplewebworks.com/"
   }
 ];
 

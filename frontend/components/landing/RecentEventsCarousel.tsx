@@ -57,6 +57,7 @@ export function RecentEventsCarousel({ events }: RecentEventsCarouselProps) {
           
           <div className="flex items-center gap-2 md:gap-3 shrink-0 relative z-30">
             <button 
+              suppressHydrationWarning
               onClick={() => setIsPlaying(!isPlaying)}
               className="w-10 h-10 rounded-full border border-white/30 flex items-center justify-center text-white hover:bg-white/10 transition-colors"
               aria-label={isPlaying ? "Pause carousel" : "Play carousel"}
@@ -64,6 +65,7 @@ export function RecentEventsCarousel({ events }: RecentEventsCarouselProps) {
               {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-1" />}
             </button>
             <button 
+              suppressHydrationWarning
               onClick={() => { prevSlide(); }}
               className="w-10 h-10 rounded-full border border-white/30 flex items-center justify-center text-white hover:bg-white/10 transition-colors"
               aria-label="Previous event"
@@ -71,6 +73,7 @@ export function RecentEventsCarousel({ events }: RecentEventsCarouselProps) {
               <ChevronLeft className="w-5 h-5" />
             </button>
             <button 
+              suppressHydrationWarning
               onClick={() => { nextSlide(); }}
               className="w-10 h-10 rounded-full border border-white/30 flex items-center justify-center text-white hover:bg-white/10 transition-colors"
               aria-label="Next event"

@@ -145,7 +145,7 @@ async def get_google_events(
     redis = Depends(get_redis)
 ):
     # Try to fetch from cache
-    cache_key = f"calendar:events:{current_user.clerk_id}:{timeMin}:{timeMax}"
+    cache_key = f"calendar:events:{current_user.id}:{timeMin}:{timeMax}"
     try:
         cached_events = await redis.get(cache_key)
         if cached_events:
