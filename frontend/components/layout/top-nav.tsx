@@ -9,6 +9,7 @@ import { useState, useEffect, useRef } from "react";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
+import { startNavigationTour } from "@/components/onboarding/NavigationTour";
 
 export function TopNav() {
   const pathname = usePathname();
@@ -206,12 +207,12 @@ export function TopNav() {
     { name: "Manage Users", href: "/admin/users" },
   ];
 
-  const NavItem = ({ title, links }: { title: string, links?: {name: string, href: string}[] }) => {
+  const NavItem = ({ title, links, dataTour }: { title: string, links?: {name: string, href: string}[], dataTour?: string }) => {
     // If no links, it's just a top level text/link (like Home)
     if (!links) {
       const isActive = pathname === "/";
       return (
-        <Link href="/" className={cn(
+        <Link href="/" data-tour={dataTour} className={cn(
           "font-semibold text-sm py-1 relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:bg-[#00dc82] after:transition-transform after:duration-300",
           isActive ? "text-[#00dc82] after:scale-x-100 after:origin-bottom-left" : "text-white after:scale-x-0 after:origin-bottom-right hover:text-[#00dc82] hover:after:scale-x-100 hover:after:origin-bottom-left"
         )}>
@@ -224,7 +225,7 @@ export function TopNav() {
     
     return (
       <div className="group relative">
-        <button suppressHydrationWarning className={cn(
+        <button data-tour={dataTour} suppressHydrationWarning className={cn(
           "flex items-center gap-1 text-sm font-semibold py-1 relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:bg-[#00dc82] after:transition-transform after:duration-300",
           isParentActive ? "text-[#00dc82] after:scale-x-100 after:origin-bottom-left" : "text-white after:scale-x-0 after:origin-bottom-right hover:text-[#00dc82] hover:after:scale-x-100 hover:after:origin-bottom-left"
         )}>
@@ -274,10 +275,10 @@ export function TopNav() {
           </Link>
           
           <div className="hidden md:flex items-center gap-4 lg:gap-6">
-            <NavItem title="Home" />
-            <NavItem title="Company Resources" links={companyResources} />
-            <NavItem title="Employee Resources" links={employeeResources} />
-            <NavItem title="Workspaces & Teams" links={workspaces} />
+            <NavItem title="Home" dataTour="nav-home" />
+            <NavItem title="Company Resources" links={companyResources} dataTour="nav-company-resources" />
+            <NavItem title="Employee Resources" links={employeeResources} dataTour="nav-employee-resources" />
+            <NavItem title="Workspaces & Teams" links={workspaces} dataTour="nav-workspaces" />
             {isAdmin && (
               <NavItem title="Admin" links={adminLinks} />
             )}
@@ -286,7 +287,7 @@ export function TopNav() {
 
         {/* Right Side: Search and Icons */}
         <div className="flex items-center gap-2 md:gap-4">
-          <div className="relative hidden lg:flex w-48 xl:w-64 items-center mr-2">
+          <div data-tour="nav-search" className="relative hidden lg:flex w-48 xl:w-64 items-center mr-2">
             <Search className="absolute left-3 h-4 w-4 text-gray-500" />
             <input
               suppressHydrationWarning
@@ -297,8 +298,23 @@ export function TopNav() {
           </div>
 
           <div className="flex items-center gap-2 md:gap-4 text-white">
-          <button suppressHydrationWarning className="hidden sm:block hover:text-gray-300 transition-colors">
-            <HelpCircle className="h-5 w-5" />
+          <button data-tour="nav-help" suppressHydrationWarning className="hidden sm:block hover:text-gray-300 transition-colors relative group">
+            <HelpCircle className="h-5 w-5 peer" />
+            <div className="absolute right-0 top-full mt-3 w-80 bg-white text-slate-800 text-sm p-5 rounded-xl shadow-2xl opacity-0 invisible peer-hover:opacity-100 peer-hover:visible hover:opacity-100 hover:visible transition-all duration-300 z-50 border border-slate-100 cursor-default">
+              <div className="absolute -top-2 right-4 w-4 h-4 bg-white transform rotate-45 border-l border-t border-slate-100"></div>
+              <div className="relative z-10 text-left">
+                <h4 className="font-bold text-slate-900 mb-2 text-base">About Maple Intranet</h4>
+                <p className="mb-3 text-slate-600 leading-relaxed">
+                  Maple Intranet provides a complete hub for internal documents, events, training resources, and company updates.
+                </p>
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <p className="font-semibold text-xs text-slate-500 uppercase tracking-wider mb-1">Contact Admin for Help</p>
+                  <a href="mailto:Info@maplelearningsolutions.com" className="text-brand-green font-medium hover:underline text-sm break-all">
+                    Info@maplelearningsolutions.com
+                  </a>
+                </div>
+              </div>
+            </div>
           </button>
           <Link href="/settings" className="hidden sm:block hover:text-gray-300 transition-colors">
             <SettingsIcon className="h-5 w-5" />
@@ -358,7 +374,10 @@ export function TopNav() {
             )}
           </div>
           {!isLoaded ? null : isSignedIn ? (
-            <button onClick={() => require("next-auth/react").signOut()} className="px-3 py-1 bg-red-500 text-white rounded text-sm">Sign Out</button>
+            <div className="flex items-center gap-2">
+              <button onClick={() => startNavigationTour()} className="px-3 py-1 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded text-sm transition-colors hidden md:block whitespace-nowrap font-medium">Guide</button>
+              <button onClick={() => require("next-auth/react").signOut()} className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-sm transition-colors whitespace-nowrap">Sign Out</button>
+            </div>
           ) : (
             <Link href="/sign-in" className="text-sm font-semibold bg-brand-green text-black px-3 py-1.5 rounded hover:bg-brand-teal transition-colors">
               Sign In

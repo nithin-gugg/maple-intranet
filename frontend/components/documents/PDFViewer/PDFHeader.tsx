@@ -9,7 +9,7 @@ interface PDFHeaderProps {
 
 export function PDFHeader({ title, onBack, isFullscreen, onToggleFullscreen }: PDFHeaderProps) {
   return (
-    <div className="flex items-center justify-between pb-1 border-b border-hairline flex-shrink-0 bg-canvas px-4 pt-1">
+    <div className={`flex items-center justify-between pb-1 border-b border-hairline flex-shrink-0 px-4 pt-1 ${isFullscreen ? 'bg-white dark:bg-[#0F172A] z-[110] relative' : 'bg-canvas'}`}>
       <div className="flex items-center">
         {onBack && (
           <button

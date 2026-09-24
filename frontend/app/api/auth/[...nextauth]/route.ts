@@ -43,7 +43,8 @@ export const authOptions: NextAuthOptions = {
               name: `${data.user.first_name} ${data.user.last_name}`.trim(),
               accessToken: data.access_token,
               roles: data.user.roles,
-              onboarding_completed: data.user.onboarding_completed
+              onboarding_completed: data.user.onboarding_completed,
+              navigation_tour_completed: data.user.navigation_tour_completed
             };
           }
         } catch (error) {
@@ -64,11 +65,15 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.roles = user.roles;
         token.onboarding_completed = user.onboarding_completed;
+        token.navigation_tour_completed = user.navigation_tour_completed;
       }
       
       if (trigger === "update" && session) {
         if (session.onboarding_completed !== undefined) {
           token.onboarding_completed = session.onboarding_completed;
+        }
+        if (session.navigation_tour_completed !== undefined) {
+          token.navigation_tour_completed = session.navigation_tour_completed;
         }
       }
       
@@ -79,6 +84,7 @@ export const authOptions: NextAuthOptions = {
       session.user.id = token.id as string;
       session.user.roles = (token.roles as string[]) || [];
       session.user.onboarding_completed = token.onboarding_completed as boolean;
+      session.user.navigation_tour_completed = token.navigation_tour_completed as boolean;
       return session;
     }
   },

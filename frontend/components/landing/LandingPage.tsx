@@ -18,6 +18,8 @@ import { DockNav, type DockNavItem } from "@/components/ui/dock-nav";
 import AuroraBackground from "@/components/ui/aurora-background";
 import { OurVerticals } from "@/components/landing/OurVerticals";
 import { KudosFeed } from "@/components/kudos/KudosFeed";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { RecentEventsCarousel } from "@/components/landing/RecentEventsCarousel";
 
 const HeroCarousel = () => {
   const images = [
@@ -56,20 +58,19 @@ const CalendarWidget = dynamic(() => import("@/components/CalendarWidget"), {
 });
 
 const DEFAULT_DOCK_ITEMS: DockNavItem[] = [
-  {
-    label: "Hubstaff",
-    iconSrc: "/1.webp",
-    alt: "Hubstaff app icon",
-  },
+
   {
     label: "MapleBot",
     iconSrc: "/2.webp",
     alt: "MapleBot app icon",
+    href: "https://maplebot.maplelearningsolutions.com/",
+    target: "_blank",
   },  
   {
     label: "Documents",
     iconSrc: "/3.webp",
-    alt: "Slack app icon",
+    alt: "Documents app icon",
+    href: "/documents",
   },
   {
     label: "Confluence",
@@ -80,23 +81,37 @@ const DEFAULT_DOCK_ITEMS: DockNavItem[] = [
     label: "Courses",
     iconSrc: "/5.webp",
     alt: "Courses app icon",
+    href: "/learning",
   },
   {
     label: "Trello",
     iconSrc: "/6.webp",
     alt: "Trello app icon",
+    href: "https://trello.com/",
+    target: "_blank",
   },
   {
     label: "Calendar",
     iconSrc: "/7.webp",
     alt: "Calendar app icon",
+    href: "https://calendar.google.com/calendar",
+    target: "_blank",
   },
   {
     label: "GMail",
     iconSrc: "/8.webp",
     alt: "Gmail app icon",
+    href: "https://mail.google.com/mail/",
+    target: "_blank",
   }
 ];
+
+export const CONFLUENCE_URLS = {
+  "Web & Sales": "https://renuka23062002.atlassian.net/wiki/x/nwAR", // TODO: Add actual Web & Sales Confluence URL here
+  "Digital Marketing": "https://marketing-team-maple.atlassian.net/wiki/spaces/DM/overview", // TODO: Add actual Digital Marketing Confluence URL here
+  "eLearning": "#", // TODO: Add actual eLearning Confluence URL here
+  "HR": "#", // TODO: Add actual HR Confluence URL here
+};
 
 interface LandingPageProps {
   isPublic?: boolean;
@@ -112,6 +127,20 @@ export function LandingPage({ isPublic, isLoggedIn }: LandingPageProps) {
   
   const [isGoogleConnected, setIsGoogleConnected] = useState(false);
   const [userToken, setUserToken] = useState<string | null>(null);
+  const [isConfluenceModalOpen, setIsConfluenceModalOpen] = useState(false);
+
+  const dockItems = DEFAULT_DOCK_ITEMS.map(item => {
+    if (item.label === "Confluence") {
+      return {
+        ...item,
+        onClick: (e: React.MouseEvent<HTMLAnchorElement>) => {
+          e.preventDefault();
+          setIsConfluenceModalOpen(true);
+        }
+      };
+    }
+    return item;
+  });
 
   useEffect(() => {
     const checkStatus = async () => {
@@ -215,15 +244,15 @@ export function LandingPage({ isPublic, isLoggedIn }: LandingPageProps) {
   }, []);
 
   const resources = [
-    { name: "Benefits", icon: HeartPulse },
-    { name: "Payroll", icon: FileBox },
-    { name: "Time Off", icon: CalendarDays },
-    { name: "Policies & Procedures", icon: BookOpen },
-    { name: "Learning & Training", icon: GraduationCap },
-    { name: "IT Help Desk", icon: SearchCode },
-    { name: "Forms & Resources", icon: Folder },
-    { name: "Health & Wellness", icon: Heart },
-    { name: "Employee Directory", icon: User },
+    { name: "Benefits", icon: HeartPulse, href: "/documents" },
+    { name: "Payroll", icon: FileBox, href: "/documents" },
+    { name: "Time Off", icon: CalendarDays, href: "/documents" },
+    { name: "Policies & Procedures", icon: BookOpen, href: "/documents" },
+    { name: "Learning & Training", icon: GraduationCap, href: "/learning" },
+    { name: "IT Help Desk", icon: SearchCode, href: "/documents" },
+    { name: "Forms & Resources", icon: Folder, href: "/documents" },
+    { name: "Health & Wellness", icon: Heart, href: "/documents" },
+    { name: "Employee Directory", icon: User, href: "/employees" },
   ];
 
   const heroLinks = [
@@ -291,11 +320,16 @@ export function LandingPage({ isPublic, isLoggedIn }: LandingPageProps) {
           <p className="text-lg md:text-xl text-slate-200 mb-10 max-w-3xl mx-auto leading-relaxed drop-shadow-sm">
             Stay connected with company news, upcoming events, helpful resources, and everything you need for a day.
           </p>
+          <div className="flex justify-center mb-8">
+            <Link href="/learning" data-tour="hero-primary-cta" className="px-8 py-3 bg-[#00dc82] text-black font-semibold rounded-full shadow-lg hover:bg-white transition-colors">
+              Start Learning
+            </Link>
+          </div>
         </div>
 
         {/* Floating Bottom Widget */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-max max-w-[95%] hidden md:block">
-          <DockNav items={DEFAULT_DOCK_ITEMS} className="bg-[#2c3e50]/80 backdrop-blur-md border border-white/10 rounded-full p-2 shadow-2xl" />
+        <div data-tour="dock" className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-max max-w-[95%] hidden md:block">
+          <DockNav items={dockItems} className="bg-[#2c3e50]/80 backdrop-blur-md border border-white/10 rounded-full p-2 shadow-2xl" />
         </div>
       </section>
 
@@ -358,10 +392,10 @@ export function LandingPage({ isPublic, isLoggedIn }: LandingPageProps) {
 
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-3 mt-8">
                 {resources.map((res, i) => (
-                  <button suppressHydrationWarning key={i} className="flex flex-col items-center justify-center p-4 bg-slate-800 text-white rounded-xl hover:bg-brand-green hover:text-black transition-all duration-200 shadow-sm group">
+                  <Link href={res.href} suppressHydrationWarning key={i} className="flex flex-col items-center justify-center p-4 bg-slate-800 text-white rounded-xl hover:bg-brand-green hover:text-black transition-all duration-200 shadow-sm group">
                     <res.icon className="h-8 w-8 mb-3 opacity-80 group-hover:opacity-100" />
                     <span className="text-xs font-semibold text-center leading-tight">{res.name}</span>
-                  </button>
+                  </Link>
                 ))}
               </div>
             </div>
@@ -506,44 +540,7 @@ export function LandingPage({ isPublic, isLoggedIn }: LandingPageProps) {
       <OurVerticals />
 
       {/* RECENT EVENTS GALLERY */}
-      <section className="max-w-7xl mx-auto px-6 lg:px-12 pt-6 mb-16">
-        <div className="flex items-center gap-4 border-b-2 border-slate-200 pb-2 mb-8">
-          <div className="w-1.5 h-8 bg-brand-green rounded-full"></div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight uppercase">Recent Events</h2>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-          {/* Top Row: 2 items, col-span-3 each */}
-          {recentEvents.slice(0, 2).map((event, i) => (
-            <div key={i} className="md:col-span-3 aspect-[16/9] rounded-3xl overflow-hidden relative group cursor-pointer bg-[#0f1115] shadow-lg border border-slate-800">
-              <img src={event.img} alt={event.title} className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 opacity-75 group-hover:opacity-100" />
-              {/* Gradient Overlay for text readability */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90"></div>
-              
-              <div className="absolute bottom-0 left-0 p-6 w-full flex flex-col justify-end text-white z-10">
-                <span className="inline-flex items-center justify-center px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs font-bold w-max mb-3 border border-white/20">{event.date}</span>
-                <h3 className="font-bold text-2xl mb-2 group-hover:text-brand-green transition-colors">{event.title}</h3>
-                <p className="text-sm text-slate-300 line-clamp-2 max-w-sm">{event.desc}</p>
-              </div>
-            </div>
-          ))}
-
-          {/* Bottom Row: 3 items, col-span-2 each */}
-          {recentEvents.slice(2, 5).map((event, i) => (
-            <div key={i + 2} className="md:col-span-2 aspect-[16/9] rounded-3xl overflow-hidden relative group cursor-pointer bg-[#0f1115] shadow-lg border border-slate-800">
-              <img src={event.img} alt={event.title} className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 opacity-75 group-hover:opacity-100" />
-              {/* Gradient Overlay for text readability */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90"></div>
-              
-              <div className="absolute bottom-0 left-0 p-6 w-full flex flex-col justify-end text-white z-10">
-                <span className="inline-flex items-center justify-center px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs font-bold w-max mb-3 border border-white/20">{event.date}</span>
-                <h3 className="font-bold text-lg mb-2 group-hover:text-brand-green transition-colors">{event.title}</h3>
-                <p className="text-xs text-slate-300 line-clamp-2">{event.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      <RecentEventsCarousel events={recentEvents} />
 
       {/* STAFF DIRECTORY SECTION */}
       <section className="bg-white border-y border-slate-200 py-16 mb-16 shadow-sm">
@@ -703,6 +700,29 @@ export function LandingPage({ isPublic, isLoggedIn }: LandingPageProps) {
           </div>
         </div>
       </footer>
+      {/* Confluence Department Selector Modal */}
+      <Dialog open={isConfluenceModalOpen} onOpenChange={setIsConfluenceModalOpen}>
+        <DialogContent className="sm:max-w-md border-hairline bg-white shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold text-ink">Select Your Department</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 py-4">
+            {Object.entries(CONFLUENCE_URLS).map(([dept, url]) => (
+              <a
+                key={dept}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setIsConfluenceModalOpen(false)}
+                className="flex items-center justify-between px-4 py-3 bg-surface hover:bg-slate-100 border border-hairline rounded-lg transition-colors group"
+              >
+                <span className="font-medium text-ink group-hover:text-brand-teal">{dept}</span>
+                <ArrowRight className="h-4 w-4 text-slate-400 group-hover:text-brand-teal" />
+              </a>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

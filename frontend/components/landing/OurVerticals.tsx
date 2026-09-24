@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowLeft, ArrowRight, ArrowRight as ArrowRightIcon } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import AuroraBackground from "../ui/aurora-background";
 
 const verticals = [
   {
@@ -119,14 +120,17 @@ export function OurVerticals() {
         </div>
 
         {/* Featured Card */}
+        
         <div 
-          className="bg-[#263238] rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative"
+          className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
         >
+          <AuroraBackground>
           <div className="flex flex-col md:flex-row h-full">
             {/* Image Section */}
-            <div className="w-full md:w-[55%] aspect-video md:aspect-auto relative overflow-hidden bg-[#1f2937]">
+            <div className="w-full md:w-[80%] p-6 md:p-10 flex flex-col justify-center relative">
+              <div className="w-full aspect-video relative rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-[#1f2937]">
               {verticals.map((vertical, index) => (
                 <div 
                   key={vertical.id}
@@ -143,14 +147,15 @@ export function OurVerticals() {
                     className="w-full h-full object-cover"
                   />
                   {/* Subtle gradient overlay to blend with the dark card */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#263238] opacity-0 md:opacity-100"></div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#263238] to-transparent opacity-100 md:opacity-0"></div>
+                  {/* */}
+                  {/* */}
                 </div>
               ))}
+              </div>
             </div>
 
             {/* Content Section */}
-            <div className="w-full md:w-[45%] py-12 px-8 lg:py-16 lg:px-12 flex flex-col justify-center relative min-h-[500px]">
+            <div className="w-full md:w-[50%] py-12 px-8 lg:py-16 lg:pr-16 flex flex-col justify-center relative min-h-[500px]">
               {verticals.map((vertical, index) => (
                 <div 
                   key={vertical.id}
@@ -182,7 +187,9 @@ export function OurVerticals() {
               ))}
             </div>
           </div>
+          </AuroraBackground>
         </div>
+        
 
         {/* Timeline Progress */}
         

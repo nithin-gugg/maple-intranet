@@ -11,6 +11,7 @@ declare module "next-auth" {
       image?: string | null
       roles?: string[]
       onboarding_completed?: boolean
+    navigation_tour_completed?: boolean
     }
   }
 
@@ -19,6 +20,7 @@ declare module "next-auth" {
     accessToken?: string
     roles?: string[]
     onboarding_completed?: boolean
+    navigation_tour_completed?: boolean
   }
 }
 
@@ -28,5 +30,6 @@ declare module "next-auth/jwt" {
     accessToken?: string
     roles?: string[]
     onboarding_completed?: boolean
+    navigation_tour_completed?: boolean
   }
 }

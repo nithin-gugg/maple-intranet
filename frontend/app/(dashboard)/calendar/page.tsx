@@ -64,13 +64,13 @@ export default function CalendarPage() {
 
         <button
           onClick={handleConnectGoogle}
-          disabled={isConnected}
+
           className="flex items-center gap-2 bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-md shadow-sm hover:bg-slate-50 transition-colors disabled:opacity-50 font-medium text-sm"
         >
           {isConnected ? (
             <>
               <div className="w-2 h-2 bg-brand-green rounded-full"></div>
-              Google Workspace Connected
+              Workspace Connected (Reconnect)
             </>
           ) : (
             <>

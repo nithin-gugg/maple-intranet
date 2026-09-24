@@ -26,12 +26,15 @@ celery_app.conf.update(
     worker_cancel_long_running_tasks_on_connection_loss=True, # Fixes warning about task cancellation on connection loss
     broker_connection_retry_on_startup=True, # Ensures Celery retries connecting to the broker on startup
     # Keep idle connections alive (Upstash kills idle connections)
+    broker_pool_limit=None, # Disable connection pooling for serverless redis
     broker_transport_options={
-        "health_check_interval": 15,
+        "health_check_interval": 30,
         "socket_keepalive": True,
-        "retry_on_timeout": True
+        "retry_on_timeout": True,
+        "socket_timeout": 30,
+        "socket_connect_timeout": 30,
     },
-    redis_backend_health_check_interval=15,
+    redis_backend_health_check_interval=30,
     redis_retry_on_timeout=True,
 )
 

@@ -2,6 +2,7 @@ import { LandingPage } from "@/components/landing/LandingPage";
 import { TopNav } from "@/components/layout/top-nav";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { NavigationTour } from "@/components/onboarding/NavigationTour";
 
 export default async function Home() {
   const session = await getServerSession(authOptions);
@@ -15,6 +16,7 @@ export default async function Home() {
       <div id="main-scroll-container" className="flex-1 overflow-auto h-full">
         <LandingPage isPublic={true} isLoggedIn={!!token} />
       </div>
+      <NavigationTour />
     </div>
   );
 }

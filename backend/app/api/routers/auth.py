@@ -140,7 +140,7 @@ async def google_login(request: Request, user_id: str):
         f"client_id={GOOGLE_CLIENT_ID}&"
         f"redirect_uri={redirect_uri}&"
         "response_type=code&"
-        "scope=https://www.googleapis.com/auth/calendar.readonly&"
+        "scope=https://www.googleapis.com/auth/calendar.readonly%20https://www.googleapis.com/auth/calendar.events&"
         "access_type=offline&"
         "prompt=consent&"
         f"state={state}"

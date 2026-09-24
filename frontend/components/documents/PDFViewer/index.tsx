@@ -30,6 +30,19 @@ export default function DocumentViewer({ url, title, onBack, onFullscreenChange 
     }
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+        if (onFullscreenChange) {
+          onFullscreenChange(false);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen, onFullscreenChange]);
+
   const renderContent = () => {
     if (urlType === "GOOGLE_DRIVE_PREVIEW") {
       // If it's a view link, change it to preview for embedding
@@ -63,7 +76,7 @@ export default function DocumentViewer({ url, title, onBack, onFullscreenChange 
     <div 
       className={cn(
         "flex flex-col bg-canvas rounded-xl overflow-hidden shadow-sm border border-hairline transition-all duration-300",
-        isFullscreen ? "fixed top-16 left-0 right-0 bottom-0 z-40 h-[calc(100vh-4rem)] w-screen rounded-none border-none" : "h-[calc(100vh-10rem)]"
+        isFullscreen ? "fixed inset-0 z-[100] h-screen w-screen rounded-none border-none bg-white dark:bg-slate-900" : "h-[calc(100vh-10rem)]"
       )}
     >
       <PDFHeader 

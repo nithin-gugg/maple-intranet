@@ -18,6 +18,7 @@ class ProfileSyncResponse(BaseModel):
     email: str
     phone: Optional[str] = None
     onboarding_completed: bool
+    navigation_tour_completed: bool
     onboarding_step: int
     employee_id: Optional[str]
     designation: Optional[str]
@@ -71,6 +72,7 @@ async def sync_profile(
         "email": user.email,
         "phone": employee.phone,
         "onboarding_completed": employee.onboarding_completed,
+        "navigation_tour_completed": employee.navigation_tour_completed,
         "onboarding_step": employee.onboarding_step,
         "employee_id": employee.employee_id,
         "designation": employee.designation,
@@ -137,6 +139,22 @@ async def complete_onboarding(
         
     employee.onboarding_completed = True
     employee.onboarding_completed_at = datetime.datetime.utcnow()
+    await db.commit()
+                
+    return {"status": "success"}
+
+@router.post("/onboarding/tour-complete")
+async def complete_tour(
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    result_emp = await db.execute(select(Employee).where(Employee.id == user_id))
+    employee = result_emp.scalars().first()
+    
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+        
+    employee.navigation_tour_completed = True
     await db.commit()
                 
     return {"status": "success"}

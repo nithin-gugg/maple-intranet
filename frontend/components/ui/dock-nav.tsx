@@ -91,6 +91,8 @@ export interface DockNavItem {
   iconSrc?: string;
   /** Visible tooltip label. */
   label: string;
+  onClick?: (event: React.MouseEvent<HTMLAnchorElement>) => void;
+  target?: string;
 }
 
 export interface DockNavProps
@@ -168,7 +170,9 @@ function DockNav({
               <a
                 className={dockNavLinkVariants()}
                 href={item.href ?? "#"}
+                target={item.target}
                 onClick={(event) => {
+                  if (item.onClick) { item.onClick(event); }
                   if (!item.href) {
                     event.preventDefault();
                   }
