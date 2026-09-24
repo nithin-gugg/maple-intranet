@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -21,13 +21,13 @@ export default function CalendarWidget({ isGoogleConnected, userToken }: Calenda
   const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const mockEvents = [
+  const mockEvents = useMemo(() => [
     { title: "All Hands Meeting", date: "2026-08-15" },
     { title: "Engineering Sync", date: "2026-08-16T10:00:00" },
     { title: "Company Holiday", date: "2026-08-25", allDay: true, color: "#00DC82" },
-  ];
+  ], []);
 
-  const fetchGoogleEvents = async (info: any, successCallback: any, failureCallback: any) => {
+  const fetchGoogleEvents = useCallback(async (info: any, successCallback: any, failureCallback: any) => {
     if (!isGoogleConnected || !userToken) {
       successCallback([]);
       return;
@@ -60,7 +60,7 @@ export default function CalendarWidget({ isGoogleConnected, userToken }: Calenda
       console.error(err);
       failureCallback(err);
     }
-  };
+  }, [isGoogleConnected, userToken, toast]);
 
   const handleDateClick = (arg: any) => {
     if (!isGoogleConnected) {
@@ -218,13 +218,15 @@ export default function CalendarWidget({ isGoogleConnected, userToken }: Calenda
     }
   };
 
-  const sources: any[] = [
-    { events: mockEvents }
-  ];
-
-  if (isGoogleConnected) {
-    sources.push({ events: fetchGoogleEvents });
-  }
+  const sources = useMemo(() => {
+    const s: any[] = [
+      { events: mockEvents }
+    ];
+    if (isGoogleConnected) {
+      s.push({ events: fetchGoogleEvents });
+    }
+    return s;
+  }, [isGoogleConnected, mockEvents, fetchGoogleEvents]);
 
   const now = new Date();
   const currentHour = Math.max(0, now.getHours() - 1).toString().padStart(2, '0');
