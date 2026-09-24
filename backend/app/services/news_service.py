@@ -7,27 +7,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-class NewsCache:
-    def __init__(self):
-        self.cache = {}
-        self.ttl = timedelta(minutes=30)
-
-    def get(self, key: str):
-        if key in self.cache:
-            entry = self.cache[key]
-            if datetime.now() < entry['expiry']:
-                return entry['data']
-            else:
-                del self.cache[key]
-        return None
-
-    def set(self, key: str, data: any):
-        self.cache[key] = {
-            'data': data,
-            'expiry': datetime.now() + self.ttl
-        }
-
-news_cache = NewsCache()
+import json
+from app.core.redis_client import redis_client
+from fastapi.encoders import jsonable_encoder
 
 AI_KEYWORDS = [
     "artificial intelligence", "ai", "generative ai", "ai agents",
@@ -65,11 +47,14 @@ class NewsService:
             logger.warning("NEWS_API_KEY is not configured.")
             return _get_fallback_news()
 
-        cache_key = "ai_news"
-        cached_data = news_cache.get(cache_key)
-        
-        if cached_data:
-            return NewsResponse(status="success", articles=cached_data[:limit])
+        cache_key = "cache:ai_news"
+        try:
+            cached_data_str = await redis_client.get(cache_key)
+            if cached_data_str:
+                cached_data = json.loads(cached_data_str)
+                return NewsResponse(status="success", articles=[NewsArticle(**art) for art in cached_data[:limit]])
+        except Exception as e:
+            logger.error(f"Redis cache error: {e}")
 
         try:
             raw_articles = await asyncio.to_thread(_fetch_event_registry, settings.NEWS_API_KEY, limit)
@@ -116,8 +101,11 @@ class NewsService:
             if not filtered_articles:
                 return _get_fallback_news()
 
-            # Cache the results
-            news_cache.set(cache_key, filtered_articles)
+            # Cache the results for 30 minutes
+            try:
+                await redis_client.setex(cache_key, 1800, json.dumps(jsonable_encoder(filtered_articles)))
+            except Exception as e:
+                logger.error(f"Redis cache error: {e}")
             
             return NewsResponse(status="success", articles=filtered_articles[:limit])
             

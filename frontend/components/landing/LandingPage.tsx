@@ -302,7 +302,7 @@ export function LandingPage({ isPublic, isLoggedIn }: LandingPageProps) {
       title: "Ganesh Chaturthi",
       date: "Sep 2026",
       desc: "Ganesh Chaturthi celebrations.",
-      img: "/ganeshchethurthi.jpeg",
+      img: "/Ganeshchethurthi.jpeg",
     }
   ];
 

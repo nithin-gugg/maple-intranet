@@ -8,16 +8,34 @@ from pydantic import BaseModel
 import json
 from app.api.routers.websockets import manager
 from sqlalchemy import text
+from app.core.redis_client import get_redis
+from fastapi.encoders import jsonable_encoder
 
 router = APIRouter()
 
 @router.get("/", response_model=None)
 async def get_announcements(
     db: AsyncSession = Depends(get_db),
+    redis = Depends(get_redis)
     # current_user = Depends(get_current_user)
 ):
+    try:
+        cached = await redis.get("cache:announcements")
+        if cached:
+            return json.loads(cached)
+    except Exception as e:
+        print(f"Redis cache error: {e}")
+
     result = await db.execute(select(Announcement).order_by(Announcement.created_at.desc()))
-    return result.scalars().all()
+    announcements = result.scalars().all()
+    
+    try:
+        # Cache the announcements for a long time since we invalidate on create
+        await redis.setex("cache:announcements", 3600, json.dumps(jsonable_encoder(announcements)))
+    except Exception as e:
+        print(f"Redis cache error: {e}")
+        
+    return announcements
 
 class AnnouncementCreate(BaseModel):
     title: str
@@ -28,7 +46,8 @@ class AnnouncementCreate(BaseModel):
 async def create_announcement(
     announcement: AnnouncementCreate,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(require_admin)
+    current_user = Depends(require_admin),
+    redis = Depends(get_redis)
 ):
     
     new_announcement = Announcement(
@@ -78,5 +97,11 @@ async def create_announcement(
         }
     }
     await manager.broadcast(json.dumps(payload))
+
+    # Invalidate cache
+    try:
+        await redis.delete("cache:announcements")
+    except Exception as e:
+        print(f"Redis cache error: {e}")
 
     return new_announcement

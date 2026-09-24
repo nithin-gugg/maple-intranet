@@ -9,6 +9,8 @@ import httpx
 from datetime import datetime
 import os
 import uuid
+import json
+from app.core.redis_client import get_redis
 
 router = APIRouter()
 
@@ -139,8 +141,18 @@ async def get_google_events(
     timeMin: str,
     timeMax: str,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    redis = Depends(get_redis)
 ):
+    # Try to fetch from cache
+    cache_key = f"calendar:events:{current_user.clerk_id}:{timeMin}:{timeMax}"
+    try:
+        cached_events = await redis.get(cache_key)
+        if cached_events:
+            return json.loads(cached_events)
+    except Exception as e:
+        print(f"Redis cache error: {e}")
+
     try:
         url = f"https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin={timeMin}&timeMax={timeMax}&singleEvents=true&orderBy=startTime"
         response = await google_api_request(current_user, db, "GET", url)
@@ -172,6 +184,12 @@ async def get_google_events(
             "color": "#4285F4",
             "meet_url": meet_url
         })
+        
+    # Cache the successful response for 60 seconds to improve performance
+    try:
+        await redis.setex(cache_key, 60, json.dumps(events))
+    except Exception as e:
+        print(f"Redis cache error: {e}")
         
     return events
 
