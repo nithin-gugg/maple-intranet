@@ -18,6 +18,7 @@ export default function SettingsPage() {
     first_name: "",
     last_name: "",
     email: "",
+    phone: "",
     employee_id: "",
     role_name: "",
     department_id: "",
@@ -48,6 +49,7 @@ export default function SettingsPage() {
             first_name: profile.first_name || "",
             last_name: profile.last_name || "",
             email: profile.email || "",
+            phone: profile.phone || "",
             employee_id: profile.employee_id || "",
             role_name: profile.roles?.[0] || "",
             department_id: profile.department_id?.toString() || "",
@@ -82,6 +84,7 @@ export default function SettingsPage() {
         first_name: formData.first_name,
         last_name: formData.last_name,
         employee_id: formData.employee_id,
+        phone: formData.phone,
         department_id: formData.department_id ? Number(formData.department_id) : null,
         designation: formData.designation,
       };
@@ -143,6 +146,10 @@ export default function SettingsPage() {
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Email <span className="text-xs text-slate-400 font-normal ml-2">(Managed by Maple Learning Solutions)</span></label>
               <input type="email" value={formData.email} disabled className="w-full px-4 py-2 rounded-md border border-hairline bg-slate-100 text-slate-500 cursor-not-allowed" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Phone Number</label>
+              <input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full px-4 py-2 rounded-md border border-hairline bg-surface focus:outline-none focus:ring-2 focus:ring-brand-green" />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Date of Birth</label>

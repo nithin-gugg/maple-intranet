@@ -7,12 +7,13 @@ import { Loader2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 interface Cmi5PlayerProps {
+  courseId?: number;
   packageId: number;
   entryPointUrl: string;
   userId: string;
 }
 
-export default function Cmi5Player({ packageId, entryPointUrl, userId }: Cmi5PlayerProps) {
+export default function Cmi5Player({ courseId, packageId, entryPointUrl, userId }: Cmi5PlayerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { data: session } = useSession();
   const token = session?.accessToken;
@@ -36,7 +37,7 @@ export default function Cmi5Player({ packageId, entryPointUrl, userId }: Cmi5Pla
         const initRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/cmi5/initialize`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ package_id: packageId, user_id: userId }),
+            body: JSON.stringify({ package_id: packageId, course_id: courseId, user_id: userId }),
         });
         
         const initData = await initRes.json();

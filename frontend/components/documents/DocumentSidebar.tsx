@@ -1,15 +1,13 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect, react/no-unescaped-entities */
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { Folder, FolderOpen, FileText, LayoutGrid, ChevronRight, ChevronDown, Loader2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 
 export interface DocumentSidebarProps {
-  activeMainCategory?: string;
-  activeSubcategory?: string;
   onCloseMobile?: () => void;
 }
 
@@ -27,15 +25,32 @@ const SUBCATEGORIES: Record<string, string> = {
   UNCATEGORIZED_OFFICIAL: "Uncategorized"
 };
 
-export function DocumentSidebar({ activeMainCategory, activeSubcategory, onCloseMobile }: DocumentSidebarProps) {
+function DocumentSidebarContent({ onCloseMobile }: DocumentSidebarProps) {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const activeDocumentId = params?.id as string | undefined;
+
+  const urlCategory = searchParams.get("category");
+  const urlSubcategory = searchParams.get("subcategory");
 
   const [documents, setDocuments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   
+  const activeDocument = useMemo(() => {
+    if (!activeDocumentId) return null;
+    return documents.find(d => d.id.toString() === activeDocumentId);
+  }, [documents, activeDocumentId]);
+
+  const activeMainCategory = activeDocumentId
+    ? activeDocument?.category?.main_category
+    : urlCategory;
+
+  const activeSubcategory = activeDocumentId
+    ? activeDocument?.category?.name
+    : urlSubcategory;
+
   // Expanded state for main categories
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
     OFFICIAL: activeMainCategory === "OFFICIAL" || !activeMainCategory,
@@ -312,5 +327,13 @@ export function DocumentSidebar({ activeMainCategory, activeSubcategory, onClose
         </nav>
       </div>
     </div>
+  );
+}
+
+export function DocumentSidebar(props: DocumentSidebarProps) {
+  return (
+    <Suspense fallback={<div className="p-6 text-white/50"><Loader2 className="h-5 w-5 animate-spin" /></div>}>
+      <DocumentSidebarContent {...props} />
+    </Suspense>
   );
 }

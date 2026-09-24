@@ -6,7 +6,6 @@ import { Loader2, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { DocumentsLayout } from "@/components/documents/DocumentsLayout";
 import Link from "next/link";
 
 const MAIN_CATEGORIES = {
@@ -53,17 +52,13 @@ export default function DocumentViewerPage({ params }: { params: Promise<{ id: s
 
   if (loading) {
     return (
-      <DocumentsLayout>
-        <div className="p-12 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-brand-green" /></div>
-      </DocumentsLayout>
+      <div className="p-12 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-brand-green" /></div>
     );
   }
 
   if (!doc) {
     return (
-      <DocumentsLayout>
-        <div className="p-12 text-center text-slate-500">Document not found or you don't have access.</div>
-      </DocumentsLayout>
+      <div className="p-12 text-center text-slate-500">Document not found or you don't have access.</div>
     );
   }
 
@@ -74,7 +69,7 @@ export default function DocumentViewerPage({ params }: { params: Promise<{ id: s
   const subCatTitle = SUBCATEGORIES[subCategory] || subCategory;
 
   return (
-    <DocumentsLayout activeMainCategory={mainCategory} activeSubcategory={subCategory}>
+    <>
       <div className="pb-8 h-full flex flex-col">
         
         {/* Breadcrumbs & Header */}
@@ -120,6 +115,6 @@ export default function DocumentViewerPage({ params }: { params: Promise<{ id: s
           </div>
         )}
       </div>
-    </DocumentsLayout>
+    </>
   );
 }

@@ -283,12 +283,46 @@ async def delete_course(
 ):
     from fastapi import HTTPException
     from sqlalchemy import delete
+    from app.models.learning import (
+        LearningAttempt, LearningActivityEvent, TrackingEventInbox,
+        LessonProgress, QuizAttempt, ScormRuntimeState, RuntimeState,
+        Cmi5Registration
+    )
     
     result = await db.execute(select(Course).where(Course.id == course_id))
     course = result.scalars().first()
     
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
+        
+    # Explicitly delete analytics and tracking associated with this course
+    attempts_query = select(LearningAttempt.id, LearningAttempt.xapi_registration_uuid).where(LearningAttempt.course_id == course_id)
+    attempts_result = await db.execute(attempts_query)
+    attempts = attempts_result.all()
+    
+    if attempts:
+        attempt_ids = [a.id for a in attempts]
+        registration_uuids = [a.xapi_registration_uuid for a in attempts if a.xapi_registration_uuid]
+        
+        # Delete attempt-dependent analytics
+        await db.execute(delete(ScormRuntimeState).where(ScormRuntimeState.attempt_id.in_(attempt_ids)))
+        await db.execute(delete(RuntimeState).where(RuntimeState.attempt_id.in_(attempt_ids)))
+        await db.execute(delete(Cmi5Registration).where(Cmi5Registration.attempt_id.in_(attempt_ids)))
+        await db.execute(delete(TrackingEventInbox).where(TrackingEventInbox.attempt_id.in_(attempt_ids)))
+        await db.execute(delete(LearningActivityEvent).where(LearningActivityEvent.attempt_id.in_(attempt_ids)))
+        
+        from app.models.learning import XApiState
+        if registration_uuids:
+            await db.execute(delete(XApiState).where(XApiState.registration.in_(registration_uuids)))
+    
+    # Delete course-dependent analytics
+    await db.execute(delete(LearningActivityEvent).where(LearningActivityEvent.course_id == course_id))
+    await db.execute(delete(TrackingEventInbox).where(TrackingEventInbox.course_id == course_id))
+    await db.execute(delete(LessonProgress).where(LessonProgress.course_id == course_id))
+    await db.execute(delete(QuizAttempt).where(QuizAttempt.course_id == course_id))
+    
+    # Finally delete the attempts
+    await db.execute(delete(LearningAttempt).where(LearningAttempt.course_id == course_id))
         
     # Use direct SQL DELETE to avoid MissingGreenlet on ORM lazy-loaded cascades.
     # Database level ON DELETE CASCADE will handle child records (e.g., Postgres).

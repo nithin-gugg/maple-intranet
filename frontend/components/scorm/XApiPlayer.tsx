@@ -6,12 +6,13 @@ import { Loader2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 interface XApiPlayerProps {
+  courseId?: number;
   packageId: number;
   entryPointUrl: string;
   userId: string;
 }
 
-export default function XApiPlayer({ packageId, entryPointUrl, userId }: XApiPlayerProps) {
+export default function XApiPlayer({ courseId, packageId, entryPointUrl, userId }: XApiPlayerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { data: session } = useSession();
   const token = session?.accessToken;
@@ -51,7 +52,7 @@ export default function XApiPlayer({ packageId, entryPointUrl, userId }: XApiPla
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ package_id: packageId, user_id: userId }),
+          body: JSON.stringify({ package_id: packageId, course_id: courseId, user_id: userId }),
         });
         
         if (!res.ok) {

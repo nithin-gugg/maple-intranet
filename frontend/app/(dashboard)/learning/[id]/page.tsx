@@ -226,6 +226,7 @@ export default function CoursePlayerPage() {
           />
         ) : proxiedUrl && user ? (
           <LearningPlayer 
+            courseId={course.id}
             packageId={learningPackage.id}
             entryPointUrl={proxiedUrl}
             standard={learningPackage.standard}

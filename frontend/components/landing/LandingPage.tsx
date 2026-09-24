@@ -13,7 +13,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { AITrendingNews } from "@/components/home/AITrendingNews";
 import { useSession } from "next-auth/react";
-import { Smartphone, CheckSquare, FileText, PlayCircle, Activity, Layout, ChevronUp } from "lucide-react";
+import { Smartphone, CheckSquare, FileText, PlayCircle, Activity, Layout, ChevronUp, Loader2 } from "lucide-react";
 import { DockNav, type DockNavItem } from "@/components/ui/dock-nav";
 import AuroraBackground from "@/components/ui/aurora-background";
 import { OurVerticals } from "@/components/landing/OurVerticals";
@@ -110,6 +110,37 @@ export function LandingPage({ isPublic, isLoggedIn }: LandingPageProps) {
   const token = session?.accessToken;
   const userId = session?.user?.id;
   
+  const [isGoogleConnected, setIsGoogleConnected] = useState(false);
+  const [userToken, setUserToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      if (!user) return;
+      setUserToken(token || null);
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const res = await fetch(`${apiUrl}/api/v1/auth/google/status?user_id=${user.id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setIsGoogleConnected(data.is_connected);
+        }
+      } catch (err) {
+        console.error("Failed to check google status", err);
+      }
+    };
+    checkStatus();
+  }, [user, token]);
+
+  const handleConnectGoogle = () => {
+    if (!user) return;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    window.location.href = `${apiUrl}/api/v1/auth/google/login?user_id=${user.id}`;
+  };
+
   const [kudosData, setKudosData] = useState<any[]>([]);
   const [kudosLoading, setKudosLoading] = useState(true);
 
@@ -136,31 +167,37 @@ export function LandingPage({ isPublic, isLoggedIn }: LandingPageProps) {
 
   const [directoryStaff, setDirectoryStaff] = useState<any[]>([]);
   const [loadingStaff, setLoadingStaff] = useState(true);
-  const [activeResourceTab, setActiveResourceTab] = useState("Company & News");
+    const [documents, setDocuments] = useState<any[]>([]);
+  const [loadingDocs, setLoadingDocs] = useState(true);
 
-  const resourceTabs = ["Business Resources", "Employee Center", "Departments & Teams", "Company & News"];
-  const topResourcesContent = [
-    {
-      title: "Apps & Tools",
-      desc: "See all our enterprise applications and tools at a glance. These apps will help you be more productive and stay in the loop with your team and other business units.",
-      img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80",
-    },
-    {
-      title: "Staff Directory",
-      desc: "Explore our comprehensive Staff Directory to easily find contact information, departments, and roles of all team members. Stay connected and collaborate effectively.",
-      img: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=600&q=80",
-    },
-    {
-      title: "Forms & Templates",
-      desc: "Access frequently used forms and templates including expense reports, leave requests, project proposals, and performance evaluations, to streamline your workflow and stay organized.",
-      img: "https://images.unsplash.com/photo-1586281380349-632531db7ed4?auto=format&fit=crop&w=600&q=80",
-    },
-    {
-      title: "Policies & Procedures",
-      desc: "Looking for a one-stop shop for all our policies and procedures? Here, you'll find things like the employee handbook, safety protocols, and compliance guidelines.",
-      img: "https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&w=600&q=80",
-    }
-  ];
+  const RESOURCE_TABS: Record<string, string> = {
+    ONBOARDING: "Onboarding",
+    TEAMS_DEPARTMENTS: "Teams & Departments",
+    ANNOUNCEMENTS_UPDATES: "Announcements & Updates",
+    SOPS: "SOPs",
+    WORKFLOWS: "Workflows"
+  };
+  
+  const [activeResourceTab, setActiveResourceTab] = useState("ONBOARDING");
+
+  useEffect(() => {
+    const fetchDocs = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/documents`);
+        const data = await res.json();
+        setDocuments(data || []);
+      } catch (err) {
+        console.error("Failed to fetch documents", err);
+      } finally {
+        setLoadingDocs(false);
+      }
+    };
+    fetchDocs();
+  }, []);
+
+  const topResourcesContent = documents
+    .filter(doc => (doc.category?.name || "UNCATEGORIZED_OFFICIAL") === activeResourceTab)
+    .slice(0, 4);
 
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -209,34 +246,34 @@ export function LandingPage({ isPublic, isLoggedIn }: LandingPageProps) {
 
   const recentEvents = [
     {
+      title: "Global Summit",
+      date: "2026",
+      desc: "Our team representing Maple at the Global Summit.",
+      img: "/gisec.png",
+    },
+    {
       title: "4th Anniversary",
-      date: "Oct 12, 2026",
+      date: "July 24, 2026",
       desc: "Celebrating four years of growth, innovation, and teamwork at Maple.",
-      img: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=600&q=80",
+      img: "/4thyear.jpg",
     },
     {
       title: "Independence Day",
-      date: "Jul 4, 2026",
-      desc: "Annual company picnic and celebrations.",
-      img: "https://images.unsplash.com/photo-1531686264889-56fdcabd163f?auto=format&fit=crop&w=600&q=80",
+      date: "Aug 15, 2026",
+      desc: "Annual company Independence day celebrations.",
+      img: "/independance.jpg",
     },
     {
-      title: "New Space Opening",
-      date: "May 20, 2026",
-      desc: "Grand opening of our new collaborative hub and workspace.",
-      img: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=600&q=80",
+      title: "Onam",
+      date: "Aug 2026",
+      desc: "Celebrating Onam at the office.",
+      img: "/onam.jpeg",
     },
     {
-      title: "Tech Conference",
-      date: "Mar 15, 2026",
-      desc: "Showcasing our latest product updates at the annual tech expo.",
-      img: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=600&q=80",
-    },
-    {
-      title: "Annual Retreat",
-      date: "Jan 10, 2026",
-      desc: "Company-wide strategic planning and team building in the mountains.",
-      img: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=600&q=80",
+      title: "Ganesh Chaturthi",
+      date: "Sep 2026",
+      desc: "Ganesh Chaturthi celebrations.",
+      img: "/ganeshchethurthi.jpeg",
     }
   ];
 
@@ -286,8 +323,27 @@ export function LandingPage({ isPublic, isLoggedIn }: LandingPageProps) {
                 <div className="w-1.5 h-8 bg-brand-green rounded-full"></div>
                 <h2 className="text-2xl font-bold text-slate-900 tracking-tight uppercase">Company Calendar</h2>
               </div>
+              {user && (
+                <button
+                  onClick={handleConnectGoogle}
+                  disabled={isGoogleConnected}
+                  className="flex items-center gap-2 bg-white border border-slate-300 text-slate-700 px-3 py-1.5 rounded-md shadow-sm hover:bg-slate-50 transition-colors disabled:opacity-50 font-medium text-sm whitespace-nowrap mb-6 -mt-2"
+                >
+                  {isGoogleConnected ? (
+                    <>
+                      <div className="w-2 h-2 bg-brand-green rounded-full"></div>
+                      Google Workspace Connected
+                    </>
+                  ) : (
+                    <>
+                      <CalendarDays className="w-4 h-4 text-slate-500" />
+                      Connect Google Workspace
+                    </>
+                  )}
+                </button>
+              )}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 h-[400px] overflow-auto">
-                <CalendarWidget />
+                <CalendarWidget isGoogleConnected={isGoogleConnected} userToken={userToken} />
               </div>
             </div>
           </div>
@@ -379,9 +435,9 @@ export function LandingPage({ isPublic, isLoggedIn }: LandingPageProps) {
             </div>
             <h3 className="text-2xl font-bold text-white mb-4">Our Vision</h3>
             <p className="text-slate-300 leading-relaxed">
-              To be the premier digital workspace that empowers every employee to reach their 
-              full potential, driving innovation and excellence across the entire organization 
-              through seamless connectivity and shared knowledge.
+              To empower businesses worldwide 
+              with innovative and customized eLearning 
+              solutions that help achieve business objectives and drive overall growth.
             </p>
           </div>
 
@@ -392,9 +448,9 @@ export function LandingPage({ isPublic, isLoggedIn }: LandingPageProps) {
             </div>
             <h3 className="text-2xl font-bold text-white mb-4">Our Mission</h3>
             <p className="text-slate-300 leading-relaxed">
-              We strive to provide a robust, intuitive, and engaging intranet platform that 
-              simplifies access to critical resources, fosters transparent communication, 
-              and cultivates a thriving, collaborative company culture.
+              Leverage industry-proven layouts specifically 
+              designed to enhance visitor interaction and 
+              significantly increase click-through rates.
             </p>
           </div>
         </div>
@@ -410,26 +466,34 @@ export function LandingPage({ isPublic, isLoggedIn }: LandingPageProps) {
           </div>
           
           <div className="flex flex-wrap justify-center gap-6 border-b border-white/10 mb-8 pb-4">
-            {resourceTabs.map(tab => (
+            {Object.entries(RESOURCE_TABS).map(([key, label]) => (
               <button suppressHydrationWarning
-                key={tab}
-                onClick={() => setActiveResourceTab(tab)}
-                className={`px-2 py-2 text-sm font-semibold transition-colors ${activeResourceTab === tab ? 'text-white border-b-2 border-white' : 'text-slate-400 hover:text-white'}`}
+                key={key}
+                onClick={() => setActiveResourceTab(key)}
+                className={`px-2 py-2 text-sm font-semibold transition-colors ${activeResourceTab === key ? 'text-white border-b-2 border-white' : 'text-slate-400 hover:text-white'}`}
               >
-                {tab}
+                {label}
               </button>
             ))}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {topResourcesContent.map((resource, i) => (
-              <Link key={i} href="/documents" className="bg-[#37474f] rounded-lg overflow-hidden hover:bg-[#455a64] transition-colors border border-white/5 flex flex-col h-full shadow-lg group">
-                <div className="h-32 overflow-hidden bg-slate-800">
-                  <img src={resource.img} alt={resource.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+            {loadingDocs ? (
+              <div className="col-span-full py-12 flex justify-center text-slate-400"><Loader2 className="h-6 w-6 animate-spin text-brand-green mr-2" /> Loading documents...</div>
+            ) : topResourcesContent.length === 0 ? (
+              <div className="col-span-full py-12 flex justify-center text-slate-400">No documents found in this category.</div>
+            ) : topResourcesContent.map((resource, i) => (
+              <Link key={i} href={`/documents?subcategory=${activeResourceTab}`} className="bg-[#37474f] rounded-lg overflow-hidden hover:bg-[#455a64] transition-colors border border-white/5 flex flex-col h-full shadow-lg group">
+                <div className="h-32 overflow-hidden bg-slate-800 flex items-center justify-center relative">
+                  {resource.thumbnail_url ? (
+                    <img src={resource.thumbnail_url} alt={resource.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  ) : (
+                    <FileText className="h-12 w-12 text-slate-500 opacity-50" />
+                  )}
                 </div>
                 <div className="p-5 flex-1">
-                  <h3 className="font-bold text-lg mb-3">{resource.title}</h3>
-                  <p className="text-sm text-slate-300 leading-relaxed line-clamp-4">{resource.desc}</p>
+                  <h3 className="font-bold text-lg mb-3 text-white group-hover:text-brand-green transition-colors">{resource.title}</h3>
+                  <p className="text-sm text-slate-300 leading-relaxed line-clamp-4">{resource.description || "No description provided."}</p>
                 </div>
               </Link>
             ))}
@@ -451,7 +515,7 @@ export function LandingPage({ isPublic, isLoggedIn }: LandingPageProps) {
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
           {/* Top Row: 2 items, col-span-3 each */}
           {recentEvents.slice(0, 2).map((event, i) => (
-            <div key={i} className="md:col-span-3 h-72 rounded-3xl overflow-hidden relative group cursor-pointer bg-[#0f1115] shadow-lg border border-slate-800">
+            <div key={i} className="md:col-span-3 aspect-[16/9] rounded-3xl overflow-hidden relative group cursor-pointer bg-[#0f1115] shadow-lg border border-slate-800">
               <img src={event.img} alt={event.title} className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 opacity-75 group-hover:opacity-100" />
               {/* Gradient Overlay for text readability */}
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90"></div>
@@ -466,7 +530,7 @@ export function LandingPage({ isPublic, isLoggedIn }: LandingPageProps) {
 
           {/* Bottom Row: 3 items, col-span-2 each */}
           {recentEvents.slice(2, 5).map((event, i) => (
-            <div key={i + 2} className="md:col-span-2 h-72 rounded-3xl overflow-hidden relative group cursor-pointer bg-[#0f1115] shadow-lg border border-slate-800">
+            <div key={i + 2} className="md:col-span-2 aspect-[16/9] rounded-3xl overflow-hidden relative group cursor-pointer bg-[#0f1115] shadow-lg border border-slate-800">
               <img src={event.img} alt={event.title} className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 opacity-75 group-hover:opacity-100" />
               {/* Gradient Overlay for text readability */}
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90"></div>

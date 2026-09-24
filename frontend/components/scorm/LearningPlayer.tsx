@@ -9,27 +9,28 @@ import XApiPlayer from "./XApiPlayer";
 import Cmi5Player from "./Cmi5Player";
 
 interface LearningPlayerProps {
+  courseId?: number;
   packageId: number;
   entryPointUrl: string;
   standard: string;
   userId: string;
 }
 
-const LearningPlayer = ({ packageId, entryPointUrl, standard, userId }: LearningPlayerProps) => {
+const LearningPlayer = ({ courseId, packageId, entryPointUrl, standard, userId }: LearningPlayerProps) => {
   if (standard === "SCORM_1_2") {
-    return <Scorm12Player packageId={packageId} entryPointUrl={entryPointUrl} userId={userId} />;
+    return <Scorm12Player courseId={courseId} packageId={packageId} entryPointUrl={entryPointUrl} userId={userId} />;
   }
 
   if (standard === "SCORM_2004") {
-    return <Scorm2004Player packageId={packageId} entryPointUrl={entryPointUrl} userId={userId} />;
+    return <Scorm2004Player courseId={courseId} packageId={packageId} entryPointUrl={entryPointUrl} userId={userId} />;
   }
 
   if (standard === "XAPI") {
-    return <XApiPlayer packageId={packageId} entryPointUrl={entryPointUrl} userId={userId} />;
+    return <XApiPlayer courseId={courseId} packageId={packageId} entryPointUrl={entryPointUrl} userId={userId} />;
   }
 
   if (standard === "CMI5") {
-    return <Cmi5Player packageId={packageId} entryPointUrl={entryPointUrl} userId={userId} />;
+    return <Cmi5Player courseId={courseId} packageId={packageId} entryPointUrl={entryPointUrl} userId={userId} />;
   }
 
   return (

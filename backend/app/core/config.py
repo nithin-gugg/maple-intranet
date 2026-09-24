@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     NEWS_API_KEY: str | None = None
     REDIS_URL: str = "redis://localhost:6379/0"
     
+    GOOGLE_CLIENT_ID: str | None = None
+    GOOGLE_CLIENT_SECRET: str | None = None
+    
     # Celery Configuration
     CELERY_BROKER_URL: str | None = None
     CELERY_RESULT_BACKEND: str | None = None

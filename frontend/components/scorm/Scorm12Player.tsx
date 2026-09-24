@@ -6,12 +6,13 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 interface ScormPlayerProps {
+  courseId?: number;
   packageId: number;
   entryPointUrl: string;
   userId: string;
 }
 
-export default function Scorm12Player({ packageId, entryPointUrl, userId }: ScormPlayerProps) {
+export default function Scorm12Player({ courseId, packageId, entryPointUrl, userId }: ScormPlayerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [attemptId, setAttemptId] = useState<number | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
@@ -28,7 +29,7 @@ export default function Scorm12Player({ packageId, entryPointUrl, userId }: Scor
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/scorm/runtime/initialize`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ package_id: packageId, user_id: userId }),
+          body: JSON.stringify({ package_id: packageId, course_id: courseId, user_id: userId }),
         });
         const data = await res.json();
         setAttemptId(data.attempt_id);

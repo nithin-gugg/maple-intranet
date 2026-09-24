@@ -111,8 +111,10 @@ async def signup(
     
     return {"message": "User registered successfully", "user_id": user_id}
 
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+from app.core.config import settings
+
+GOOGLE_CLIENT_ID = settings.GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET = settings.GOOGLE_CLIENT_SECRET
 # Frontend URL for redirecting back after connection
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 

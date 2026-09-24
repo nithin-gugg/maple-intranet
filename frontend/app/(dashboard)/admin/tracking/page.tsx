@@ -25,8 +25,8 @@ export default function AdminTrackingDashboard() {
       const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
       
       const [healthRes, attemptsRes] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/admin/tracking/health`, { headers }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/admin/tracking/attempts?limit=20`, { headers })
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/admin/tracking/health`, { headers, cache: "no-store" }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/admin/tracking/attempts?limit=20`, { headers, cache: "no-store" })
       ]);
       
       if (!healthRes.ok || !attemptsRes.ok) {

@@ -8,44 +8,28 @@ import { cn } from "@/lib/utils";
 
 const verticals = [
   {
-    id: "education",
-    label: "EDUCATION",
-    title: "Innovative Learning for a Better Tomorrow",
-    description: "We partner with educational institutions and corporate academies to deliver engaging, scalable, and impactful learning experiences through cutting-edge eLearning solutions, LMS platforms, and immersive technologies.",
-    image: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=1200&q=80",
-    href: "/verticals/education"
+    id: "maple-learning-solutions",
+    label: "VERTICAL 01",
+    title: "Maple Learning Solutions",
+    description: "AI-powered eLearning company in India & UAE, building custom learning content and digital training programs for global workforces.",
+    image: "/maple.webp",
+    href: "/verticals/maple-learning-solutions"
   },
   {
-    id: "finance",
-    label: "FINANCE",
-    title: "Secure & Scalable Financial Solutions",
-    description: "Empowering financial institutions with robust, compliant, and scalable digital solutions that streamline operations, enhance customer experience, and ensure regulatory adherence.",
-    image: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=1200&q=80",
-    href: "/verticals/finance"
+    id: "lxdguild",
+    label: "VERTICAL 02",
+    title: "LXDGUILD & Academy",
+    description: "India's largest L&D community with 8000+ followers, connecting learning experience designers and running academy programs.",
+    image: "/lxdguild.webp",
+    href: "/verticals/lxdguild"
   },
   {
-    id: "manufacturing",
-    label: "MANUFACTURING",
-    title: "Driving Industry 4.0 Transformation",
-    description: "Accelerate your manufacturing capabilities with our advanced digital solutions, IoT integrations, and supply chain optimizations designed to maximize efficiency and minimize downtime.",
-    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1200&q=80",
-    href: "/verticals/manufacturing"
-  },
-  {
-    id: "healthcare",
-    label: "HEALTHCARE",
-    title: "Next-Generation Digital Healthcare",
-    description: "Transform patient care and hospital management with our secure, compliant digital healthcare platforms, telemedicine solutions, and data-driven insights.",
-    image: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80",
-    href: "/verticals/healthcare"
-  },
-  {
-    id: "public-sector",
-    label: "PUBLIC SECTOR",
-    title: "Empowering Modern E-Governance",
-    description: "Delivering secure, scalable, and accessible digital platforms for government agencies to enhance citizen engagement, streamline public services, and ensure data integrity.",
-    image: "https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=1200&q=80",
-    href: "/verticals/public-sector"
+    id: "maple-web-works",
+    label: "VERTICAL 03",
+    title: "Maple Web Works",
+    description: "Modern, high-performance web design and development for brands that need a fast, polished digital presence.",
+    image: "/mapleweb.webp",
+    href: "/verticals/maple-web-works"
   }
 ];
 

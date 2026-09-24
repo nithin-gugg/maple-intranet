@@ -25,6 +25,14 @@ celery_app.conf.update(
     task_max_retries=5, # Maximum retries before dead-letter
     worker_cancel_long_running_tasks_on_connection_loss=True, # Fixes warning about task cancellation on connection loss
     broker_connection_retry_on_startup=True, # Ensures Celery retries connecting to the broker on startup
+    # Keep idle connections alive (Upstash kills idle connections)
+    broker_transport_options={
+        "health_check_interval": 15,
+        "socket_keepalive": True,
+        "retry_on_timeout": True
+    },
+    redis_backend_health_check_interval=15,
+    redis_retry_on_timeout=True,
 )
 
 # Auto-discover tasks in all installed apps

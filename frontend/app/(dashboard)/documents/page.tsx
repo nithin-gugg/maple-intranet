@@ -6,7 +6,6 @@ import Link from "next/link";
 import { FileText, Shield, Search, Loader2, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSearchParams } from "next/navigation";
-import { DocumentsLayout } from "@/components/documents/DocumentsLayout";
 
 const MAIN_CATEGORIES = {
   OFFICIAL: { title: "Official Documents", color: "text-brand-green", bg: "bg-brand-green/10", icon: FileText },
@@ -142,8 +141,7 @@ function DocumentsPageContent() {
   }
 
   return (
-    <DocumentsLayout activeMainCategory={categoryParam || undefined} activeSubcategory={subcategoryParam || undefined}>
-      <div className="space-y-8 pb-12 w-full">
+    <div className="space-y-8 pb-12 w-full">
         
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -234,7 +232,6 @@ function DocumentsPageContent() {
           </div>
         )}
       </div>
-    </DocumentsLayout>
   );
 }
 

@@ -12,15 +12,16 @@ interface Props {
 export default function PersonalDetailsStep({ data, onNext, onBack, isSaving }: Props) {
   const [dob, setDob] = useState(data.date_of_birth || "");
   const [doj, setDoj] = useState(data.joining_date || "");
+  const [phone, setPhone] = useState(data.phone || "");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (dob && doj) {
-      onNext({ date_of_birth: dob, joining_date: doj });
+    if (dob && doj && phone) {
+      onNext({ date_of_birth: dob, joining_date: doj, phone: phone });
     }
   };
 
-  const isValid = dob && doj;
+  const isValid = dob && doj && phone;
   
   // Basic validation: DOB shouldn't be in the future, DOj could be.
   const today = new Date().toISOString().split("T")[0];
@@ -64,6 +65,21 @@ export default function PersonalDetailsStep({ data, onNext, onBack, isSaving }: 
               type="date"
               value={doj}
               onChange={(e) => setDoj(e.target.value)}
+              className="w-full px-4 py-3 rounded-lg border border-hairline bg-surface focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent transition-all"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="phone" className="block text-sm font-medium text-slate-700 mb-1">
+              Phone Number
+            </label>
+            <input
+              id="phone"
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+1 (555) 000-0000"
               className="w-full px-4 py-3 rounded-lg border border-hairline bg-surface focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent transition-all"
               required
             />

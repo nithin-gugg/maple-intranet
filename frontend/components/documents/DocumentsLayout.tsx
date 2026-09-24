@@ -6,11 +6,9 @@ import { DocumentSidebar } from "./DocumentSidebar";
 
 interface DocumentsLayoutProps {
   children: React.ReactNode;
-  activeMainCategory?: string;
-  activeSubcategory?: string;
 }
 
-export function DocumentsLayout({ children, activeMainCategory, activeSubcategory }: DocumentsLayoutProps) {
+export function DocumentsLayout({ children }: DocumentsLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -39,8 +37,6 @@ export function DocumentsLayout({ children, activeMainCategory, activeSubcategor
         
         <div className="h-[calc(100%-61px)] lg:h-full overflow-hidden">
           <DocumentSidebar 
-            activeMainCategory={activeMainCategory} 
-            activeSubcategory={activeSubcategory} 
             onCloseMobile={() => setMobileOpen(false)}
           />
         </div>

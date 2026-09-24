@@ -23,6 +23,7 @@ export type OnboardingData = {
   employee_id: string;
   date_of_birth: string;
   joining_date: string;
+  phone: string;
 };
 
 export default function OnboardingPage() {
@@ -45,6 +46,7 @@ export default function OnboardingPage() {
     employee_id: "",
     date_of_birth: "",
     joining_date: "",
+    phone: "",
   });
 
   useEffect(() => {
@@ -76,6 +78,7 @@ export default function OnboardingPage() {
             employee_id: profile.employee_id || "",
             date_of_birth: profile.date_of_birth ? profile.date_of_birth.split("T")[0] : "",
             joining_date: profile.joining_date ? profile.joining_date.split("T")[0] : "",
+            phone: profile.phone || "",
           });
           setCurrentStep(profile.onboarding_step || 1);
         }
@@ -99,6 +102,7 @@ export default function OnboardingPage() {
       if (partialData.department_id !== undefined) payload.department_id = partialData.department_id;
       if (partialData.designation !== undefined) payload.designation = partialData.designation;
       if (partialData.employee_id !== undefined) payload.employee_id = partialData.employee_id;
+      if (partialData.phone !== undefined) payload.phone = partialData.phone;
       
       if (partialData.date_of_birth) payload.date_of_birth = new Date(partialData.date_of_birth).toISOString();
       if (partialData.joining_date) payload.joining_date = new Date(partialData.joining_date).toISOString();

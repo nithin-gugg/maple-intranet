@@ -16,6 +16,7 @@ class ProfileSyncResponse(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     email: str
+    phone: Optional[str] = None
     onboarding_completed: bool
     onboarding_step: int
     employee_id: Optional[str]
@@ -30,6 +31,7 @@ class OnboardingStepData(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     employee_id: Optional[str] = None
+    phone: Optional[str] = None
     role_name: Optional[str] = None
     department_id: Optional[int] = None
     designation: Optional[str] = None
@@ -67,6 +69,7 @@ async def sync_profile(
         "first_name": user.first_name,
         "last_name": user.last_name,
         "email": user.email,
+        "phone": employee.phone,
         "onboarding_completed": employee.onboarding_completed,
         "onboarding_step": employee.onboarding_step,
         "employee_id": employee.employee_id,
@@ -99,6 +102,8 @@ async def save_onboarding_step(
         
     if data.employee_id is not None:
         employee.employee_id = data.employee_id if data.employee_id.strip() != "" else None
+    if data.phone is not None:
+        employee.phone = data.phone
     if data.designation is not None:
         employee.designation = data.designation
     if data.department_id is not None:

@@ -15,6 +15,7 @@ router = APIRouter()
 
 class XApiInitRequest(BaseModel):
     package_id: int
+    course_id: int | None = None
     user_id: str
 
 @router.post("/launch/init")
@@ -27,19 +28,24 @@ async def initialize_xapi_session(req: XApiInitRequest, db: AsyncSession = Depen
         raise HTTPException(status_code=404, detail="Package not found")
         
     # 2. Find latest attempt
-    attempt_res = await db.execute(
+    query = (
         select(LearningAttempt)
         .where(LearningAttempt.user_id == req.user_id)
         .where(LearningAttempt.package_id == req.package_id)
-        .order_by(LearningAttempt.attempt_number.desc())
     )
+    if req.course_id:
+        query = query.where(LearningAttempt.course_id == req.course_id)
+        course_id = req.course_id
+    else:
+        # Look up course_id from CourseModule (if available)
+        from app.models.learning import CourseModule
+        module_res = await db.execute(select(CourseModule).where(CourseModule.learning_package_id == req.package_id))
+        module = module_res.scalars().first()
+        course_id = module.course_id if module else None
+        
+    query = query.order_by(LearningAttempt.attempt_number.desc())
+    attempt_res = await db.execute(query)
     attempt = attempt_res.scalars().first()
-    
-    # Look up course_id from CourseModule (if available)
-    from app.models.learning import CourseModule
-    module_res = await db.execute(select(CourseModule).where(CourseModule.learning_package_id == req.package_id))
-    module = module_res.scalars().first()
-    course_id = module.course_id if module else None
 
     # 3. Create attempt if it doesn't exist
     if not attempt:

@@ -13,6 +13,7 @@ router = APIRouter()
 
 class InitRequest(BaseModel):
     package_id: int
+    course_id: int | None = None
     user_id: str
 
 class CommitRequest(BaseModel):
@@ -28,19 +29,25 @@ async def initialize_session(req: InitRequest, db: AsyncSession = Depends(get_db
         raise HTTPException(status_code=404, detail="Package not found")
         
     # 2. Find latest attempt
-    attempt_res = await db.execute(
+    query = (
         select(LearningAttempt)
         .where(LearningAttempt.user_id == req.user_id)
         .where(LearningAttempt.package_id == req.package_id)
-        .order_by(LearningAttempt.attempt_number.desc())
     )
-    attempt = attempt_res.scalars().first()
+    if req.course_id:
+        query = query.where(LearningAttempt.course_id == req.course_id)
+        course_id = req.course_id
+    else:
+        # Fallback for older players that don't pass course_id
+        from app.models.learning import CourseModule
+        module_res = await db.execute(select(CourseModule).where(CourseModule.learning_package_id == req.package_id))
+        module = module_res.scalars().first()
+        course_id = module.course_id if module else None
+        
+    query = query.order_by(LearningAttempt.attempt_number.desc())
     
-    # Look up course_id from CourseModule
-    from app.models.learning import CourseModule
-    module_res = await db.execute(select(CourseModule).where(CourseModule.learning_package_id == req.package_id))
-    module = module_res.scalars().first()
-    course_id = module.course_id if module else None
+    attempt_res = await db.execute(query)
+    attempt = attempt_res.scalars().first()
 
     # 3. Create attempt if it doesn't exist
     if not attempt:
